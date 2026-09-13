@@ -1,4 +1,4 @@
-package service.electronic;
+package service.electronic.dto;
 
 import lombok.*;
 import service.electronic.entity.Role;
