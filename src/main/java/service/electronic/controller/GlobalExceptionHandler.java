@@ -33,7 +33,7 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(WebResponse.<Map<String, String>>builder()
-                        .errors(errors.toString())
+                        .errors(errors)
                         .build());
     }
 }

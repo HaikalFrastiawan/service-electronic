@@ -14,7 +14,7 @@ public class WebResponse<T> {
     private String message;
     private T data;
 
-    private String errors;
+    private Object errors;
 
     @Builder.Default
     private LocalDateTime timestamp = LocalDateTime.now();

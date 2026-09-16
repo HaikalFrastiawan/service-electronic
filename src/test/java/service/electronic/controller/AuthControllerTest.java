@@ -10,6 +10,8 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import service.electronic.security.JwtUtil;
 import service.electronic.dto.RegisterUserRequest;
 import service.electronic.dto.UserResponse;
 import service.electronic.entity.Role;
@@ -34,6 +36,12 @@ class AuthControllerTest {
 
     @MockBean
     private UserService userService;
+
+    @MockBean
+    private JwtUtil jwtUtil;
+
+    @MockBean
+    private UserDetailsService userDetailsService;
 
     @Test
     @DisplayName("POST /api/v1/auth/register - HTTP 201 Created")
