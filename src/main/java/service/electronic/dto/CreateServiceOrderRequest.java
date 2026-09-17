@@ -26,4 +26,8 @@ public class CreateServiceOrderRequest {
 
     @NotBlank(message = "Deskripsi keluhan wajib diisi")
     private String issueDescription;
+
+    private String customerEmail;
+    private String customerName;
+    private String customerPhone;
 }

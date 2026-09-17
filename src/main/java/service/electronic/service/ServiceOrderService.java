@@ -15,9 +15,12 @@ import service.electronic.entity.User;
 import service.electronic.repository.ServiceOrderRepository;
 import service.electronic.repository.UserRepository;
 
+import service.electronic.entity.Role;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -27,8 +30,28 @@ public class ServiceOrderService {
     private final UserRepository userRepository;
 
     public ServiceOrderResponse createOrder(CreateServiceOrderRequest request, String customerEmail) {
-        User customer = userRepository.findByEmail(customerEmail)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Customer tidak ditemukan"));
+        String effectiveEmail = customerEmail != null && !customerEmail.isBlank() 
+                ? customerEmail 
+                : request.getCustomerEmail();
+
+        if (effectiveEmail == null || effectiveEmail.isBlank()) {
+            effectiveEmail = "guest_" + System.currentTimeMillis() + "@service.com";
+        }
+
+        final String finalEmail = effectiveEmail;
+        User customer = userRepository.findByEmail(finalEmail)
+                .orElseGet(() -> {
+                    User newUser = User.builder()
+                            .email(finalEmail)
+                            .password("NOPASS")
+                            .fullName(request.getCustomerName() != null && !request.getCustomerName().isBlank() 
+                                    ? request.getCustomerName() 
+                                    : "Pelanggan Guest")
+                            .phoneNumber(request.getCustomerPhone())
+                            .role(Role.CUSTOMER)
+                            .build();
+                    return userRepository.save(newUser);
+                });
 
         ElectronicDevice device = ElectronicDevice.builder()
                 .category(request.getCategory())
@@ -52,6 +75,19 @@ public class ServiceOrderService {
 
         ServiceOrder savedOrder = serviceOrderRepository.save(order);
         return mapToResponse(savedOrder);
+    }
+
+    public ServiceOrderResponse getOrderByNumber(String orderNumber) {
+        ServiceOrder order = serviceOrderRepository.findByOrderNumber(orderNumber)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Nomor resi " + orderNumber + " tidak ditemukan"));
+        return mapToResponse(order);
+    }
+
+    public List<ServiceOrderResponse> getAllOrders() {
+        return serviceOrderRepository.findAll()
+                .stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
     }
 
     @Transactional
@@ -91,13 +127,13 @@ public class ServiceOrderService {
                 .completionNotes(order.getCompletionNotes())
                 .createdAt(order.getCreatedAt())
                 .updatedAt(order.getUpdatedAt())
-                .deviceId(order.getDevice().getId())
-                .category(order.getDevice().getCategory())
-                .brand(order.getDevice().getBrand())
-                .modelName(order.getDevice().getModelName())
-                .serialNumber(order.getDevice().getSerialNumber())
-                .issueDescription(order.getDevice().getIssueDescription())
-                .customerEmail(order.getCustomer().getEmail())
+                .deviceId(order.getDevice() != null ? order.getDevice().getId() : null)
+                .category(order.getDevice() != null ? order.getDevice().getCategory() : null)
+                .brand(order.getDevice() != null ? order.getDevice().getBrand() : null)
+                .modelName(order.getDevice() != null ? order.getDevice().getModelName() : null)
+                .serialNumber(order.getDevice() != null ? order.getDevice().getSerialNumber() : null)
+                .issueDescription(order.getDevice() != null ? order.getDevice().getIssueDescription() : null)
+                .customerEmail(order.getCustomer() != null ? order.getCustomer().getEmail() : null)
                 .technicianEmail(order.getTechnician() != null ? order.getTechnician().getEmail() : null)
                 .build();
     }

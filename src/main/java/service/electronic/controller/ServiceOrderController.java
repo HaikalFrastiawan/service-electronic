@@ -12,6 +12,8 @@ import service.electronic.dto.UpdateServiceStatusRequest;
 import service.electronic.dto.WebResponse;
 import service.electronic.service.ServiceOrderService;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/v1/service-orders")
 @RequiredArgsConstructor
@@ -24,12 +26,32 @@ public class ServiceOrderController {
             @Valid @RequestBody CreateServiceOrderRequest request,
             Authentication authentication
     ) {
-        String customerEmail = authentication.getName();
+        String customerEmail = authentication != null ? authentication.getName() : null;
         ServiceOrderResponse response = serviceOrderService.createOrder(request, customerEmail);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(
                 WebResponse.<ServiceOrderResponse>builder()
                         .data(response)
+                        .build()
+        );
+    }
+
+    @GetMapping("/track/{orderNumber}")
+    public ResponseEntity<WebResponse<ServiceOrderResponse>> trackOrder(@PathVariable String orderNumber) {
+        ServiceOrderResponse response = serviceOrderService.getOrderByNumber(orderNumber);
+        return ResponseEntity.ok(
+                WebResponse.<ServiceOrderResponse>builder()
+                        .data(response)
+                        .build()
+        );
+    }
+
+    @GetMapping
+    public ResponseEntity<WebResponse<List<ServiceOrderResponse>>> getAllOrders() {
+        List<ServiceOrderResponse> responses = serviceOrderService.getAllOrders();
+        return ResponseEntity.ok(
+                WebResponse.<List<ServiceOrderResponse>>builder()
+                        .data(responses)
                         .build()
         );
     }
