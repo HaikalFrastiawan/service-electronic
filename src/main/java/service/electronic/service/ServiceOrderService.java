@@ -48,7 +48,7 @@ public class ServiceOrderService {
                                     ? request.getCustomerName() 
                                     : "Pelanggan Guest")
                             .phoneNumber(request.getCustomerPhone())
-                            .role(Role.CUSTOMER)
+                            .role(Role.ROLE_CUSTOMER)
                             .build();
                     return userRepository.save(newUser);
                 });
