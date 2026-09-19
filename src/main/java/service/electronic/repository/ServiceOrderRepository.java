@@ -1,5 +1,6 @@
 package service.electronic.repository;
 
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import service.electronic.entity.ServiceOrder;
@@ -10,9 +11,20 @@ import java.util.Optional;
 
 @Repository
 public interface ServiceOrderRepository extends JpaRepository<ServiceOrder, String> {
-    Optional<ServiceOrder> findByOrderNumber(String orderNumber);
-    List<ServiceOrder> findByCustomerId(String customerId);
-    List<ServiceOrder> findByTechnicianId(String technicianId);
-    List<ServiceOrder> findByStatus(ServiceStatus status);
 
+    @Override
+    @EntityGraph(attributePaths = {"device", "customer", "technician"})
+    List<ServiceOrder> findAll();
+
+    @EntityGraph(attributePaths = {"device", "customer", "technician"})
+    Optional<ServiceOrder> findByOrderNumber(String orderNumber);
+
+    @EntityGraph(attributePaths = {"device", "customer", "technician"})
+    List<ServiceOrder> findByCustomerId(String customerId);
+
+    @EntityGraph(attributePaths = {"device", "customer", "technician"})
+    List<ServiceOrder> findByTechnicianId(String technicianId);
+
+    @EntityGraph(attributePaths = {"device", "customer", "technician"})
+    List<ServiceOrder> findByStatus(ServiceStatus status);
 }

@@ -1,10 +1,10 @@
 package service.electronic.service;
 
-
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,20 +28,20 @@ public class UserService {
     private final JwtUtil jwtUtil;
 
     @Transactional
-    public UserResponse register(RegisterUserRequest request){
-        //validasi email
+    public UserResponse register(RegisterUserRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email sudah terdaftar!");
         }
+
         User user = User.builder()
                 .fullName(request.getFullName())
                 .email(request.getEmail())
-                .password(passwordEncoder.encode(request.getPassword())) // Enkripsi password
+                .password(passwordEncoder.encode(request.getPassword()))
                 .phoneNumber(request.getPhoneNumber())
                 .address(request.getAddress())
-                .role(Role.ROLE_CUSTOMER) // Default role pendaftaran
+                .role(Role.ROLE_CUSTOMER)
                 .build();
-        //simpan ke db
+
         User savedUser = userRepository.save(user);
 
         return UserResponse.builder()
@@ -55,20 +55,29 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    public AuthResponse login(LoginUserRequest request){
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
-        );
+    public AuthResponse login(LoginUserRequest request) {
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
+            );
+        } catch (AuthenticationException e) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Email atau password salah!");
+        }
 
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User tidak ditemukan"));
 
-        String token = jwtUtil.generateToken(user.getEmail(), user.getRole().name());
+        String roleName = user.getRole().name();
+        if (!roleName.startsWith("ROLE_")) {
+            roleName = "ROLE_" + roleName;
+        }
+
+        String token = jwtUtil.generateToken(user.getEmail(), roleName);
 
         return AuthResponse.builder()
                 .token(token)
                 .email(user.getEmail())
-                .role(user.getRole().name())
+                .role(roleName)
                 .build();
     }
 }

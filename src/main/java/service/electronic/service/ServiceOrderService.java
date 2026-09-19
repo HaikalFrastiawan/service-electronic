@@ -1,21 +1,21 @@
 package service.electronic.service;
 
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import service.electronic.dto.CreateServiceOrderRequest;
 import service.electronic.dto.ServiceOrderResponse;
 import service.electronic.dto.UpdateServiceStatusRequest;
 import service.electronic.entity.ElectronicDevice;
+import service.electronic.entity.Role;
 import service.electronic.entity.ServiceOrder;
 import service.electronic.entity.ServiceStatus;
 import service.electronic.entity.User;
 import service.electronic.repository.ServiceOrderRepository;
 import service.electronic.repository.UserRepository;
 
-import service.electronic.entity.Role;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -29,9 +29,10 @@ public class ServiceOrderService {
     private final ServiceOrderRepository serviceOrderRepository;
     private final UserRepository userRepository;
 
+    @Transactional
     public ServiceOrderResponse createOrder(CreateServiceOrderRequest request, String customerEmail) {
-        String effectiveEmail = customerEmail != null && !customerEmail.isBlank() 
-                ? customerEmail 
+        String effectiveEmail = customerEmail != null && !customerEmail.isBlank()
+                ? customerEmail
                 : request.getCustomerEmail();
 
         if (effectiveEmail == null || effectiveEmail.isBlank()) {
@@ -44,8 +45,8 @@ public class ServiceOrderService {
                     User newUser = User.builder()
                             .email(finalEmail)
                             .password("NOPASS")
-                            .fullName(request.getCustomerName() != null && !request.getCustomerName().isBlank() 
-                                    ? request.getCustomerName() 
+                            .fullName(request.getCustomerName() != null && !request.getCustomerName().isBlank()
+                                    ? request.getCustomerName()
                                     : "Pelanggan Guest")
                             .phoneNumber(request.getCustomerPhone())
                             .role(Role.ROLE_CUSTOMER)
@@ -77,12 +78,14 @@ public class ServiceOrderService {
         return mapToResponse(savedOrder);
     }
 
+    @Transactional(readOnly = true)
     public ServiceOrderResponse getOrderByNumber(String orderNumber) {
         ServiceOrder order = serviceOrderRepository.findByOrderNumber(orderNumber)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Nomor resi " + orderNumber + " tidak ditemukan"));
         return mapToResponse(order);
     }
 
+    @Transactional(readOnly = true)
     public List<ServiceOrderResponse> getAllOrders() {
         return serviceOrderRepository.findAll()
                 .stream()

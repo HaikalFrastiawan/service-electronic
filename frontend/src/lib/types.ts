@@ -1,5 +1,25 @@
 export type ServiceStatus = 'PENDING' | 'IN_PROGRESS' | 'WAITING_PARTS' | 'COMPLETED' | 'CANCELLED';
 
+export type UserRole = 'ROLE_ADMIN' | 'ROLE_TECHNICIAN' | 'ROLE_CUSTOMER';
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface RegisterRequest {
+  fullName: string;
+  email: string;
+  password: string;
+  phone?: string;
+}
+
+export interface AuthResponse {
+  token: string;
+  email: string;
+  role: UserRole;
+}
+
 export type DeviceCategory = 'LAPTOP' | 'SMARTPHONE' | 'TELEVISION' | 'REFRIGERATOR' | 'WASHING_MACHINE' | 'OTHER';
 
 export interface ServiceOrderResponse {
