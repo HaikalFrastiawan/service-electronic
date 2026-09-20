@@ -47,8 +47,10 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/service-orders/track/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/service-orders", "/api/v1/service-orders/").permitAll()
 
-                        // 3. ADMIN ONLY: Kelola/Lihat daftar pesanan
-                        .requestMatchers("/api/v1/service-orders", "/api/v1/service-orders/**").hasAnyAuthority("ROLE_ADMIN", "ADMIN")
+                        // 3. ADMIN ONLY: Dashboard, Spareparts, & Manajemen Pesanan
+                        .requestMatchers("/api/v1/dashboard/**").hasAnyAuthority("ROLE_ADMIN", "ADMIN")
+                        .requestMatchers("/api/v1/spare-parts/**").hasAnyAuthority("ROLE_ADMIN", "ADMIN")
+                        .requestMatchers("/api/v1/service-orders/**").hasAnyAuthority("ROLE_ADMIN", "ADMIN")
 
                         // 4. Sisa request lainnya wajib login
                         .anyRequest().authenticated()

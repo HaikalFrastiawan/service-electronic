@@ -6,10 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-import service.electronic.dto.CreateServiceOrderRequest;
-import service.electronic.dto.ServiceOrderResponse;
-import service.electronic.dto.UpdateServiceStatusRequest;
-import service.electronic.dto.WebResponse;
+import service.electronic.dto.*;
 import service.electronic.service.ServiceOrderService;
 
 import java.util.List;
@@ -79,5 +76,12 @@ public class ServiceOrderController {
                         .data(response)
                         .build()
         );
+    }
+
+    @PostMapping("/{orderId}/parts")
+    public ResponseEntity<ServiceOrderResponse> addSparePartToOrder(
+            @PathVariable String orderId,
+            @RequestBody AddServicePartRequest request) {
+        return ResponseEntity.ok(serviceOrderService.addSparePartToOrder(orderId, request.getSparePartId(), request.getQuantity()));
     }
 }
