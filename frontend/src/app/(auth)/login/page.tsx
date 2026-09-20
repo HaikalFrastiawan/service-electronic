@@ -75,8 +75,20 @@ export default function LoginPage() {
                             </div>
                         </div>
 
+                        {/* Bagian Input Password */}
                         <div>
-                            <label className="block text-xs font-semibold text-slate-700 mb-1">Password</label>
+                            <div className="flex items-center justify-between mb-1">
+                                <label className="block text-xs font-semibold text-slate-700">Password</label>
+
+                                {/* Link Lupa Password */}
+                                <a
+                                    href="/forgot-password"
+                                    className="text-[11px] font-bold text-blue-600 hover:text-blue-700 transition-colors"
+                                >
+                                    Lupa Password?
+                                </a>
+                            </div>
+
                             <div className="relative">
                                 <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
                                 <input
@@ -92,15 +104,10 @@ export default function LoginPage() {
                                     onClick={() => setShowPassword(!showPassword)}
                                     className="absolute right-3.5 top-3 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
                                 >
-                                    {showPassword ? (
-                                        <EyeOff className="w-4 h-4" />
-                                    ) : (
-                                        <Eye className="w-4 h-4" />
-                                    )}
+                                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                                 </button>
                             </div>
                         </div>
-
                         <button
                             type="submit"
                             disabled={isLoading}

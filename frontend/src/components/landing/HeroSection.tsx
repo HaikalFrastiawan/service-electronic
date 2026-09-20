@@ -1,10 +1,14 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Wrench } from 'lucide-react';
 import { HERO_IMAGES } from '@/data/landingData';
 
-export default function HeroSection() {
+interface HeroSectionProps {
+    onOpenOrderModal?: () => void;
+}
+
+export default function HeroSection({ onOpenOrderModal }: HeroSectionProps) {
     const [currentSlide, setCurrentSlide] = useState(0);
 
     useEffect(() => {
@@ -38,13 +42,24 @@ export default function HeroSection() {
                 <h1 className="text-3xl sm:text-5xl md:text-6xl font-black text-white leading-[1.15] tracking-tight">
                     Servis Transparan. <br />
                     <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-300 to-blue-200">
-            Pantau Progress Real-Time.
-          </span>
+                        Pantau Progress Real-Time.
+                    </span>
                 </h1>
 
                 <p className="text-slate-300 text-xs sm:text-base max-w-2xl mx-auto font-normal leading-relaxed">
                     Tak perlu repot menanyakan status perbaikan. Masukkan nomor resi untuk melihat detail bongkar, estimasi sparepart, hingga konfirmasi biaya secara terbuka.
                 </p>
+
+                {/* Tombol CTA untuk Membuka Modal Order */}
+                <div className="pt-4 flex items-center justify-center">
+                    <button
+                        onClick={onOpenOrderModal}
+                        className="px-6 py-3.5 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs uppercase tracking-wider shadow-lg shadow-blue-600/30 hover:shadow-blue-500/50 transition-all flex items-center gap-2 cursor-pointer active:scale-95"
+                    >
+                        <Wrench className="w-4 h-4" />
+                        <span>Buat Pesanan Servis</span>
+                    </button>
+                </div>
             </div>
         </section>
     );

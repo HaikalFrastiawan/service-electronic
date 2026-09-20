@@ -1,9 +1,13 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Calculator, Clock, MessageCircle } from 'lucide-react';
+import { Calculator, Clock, MessageCircle, Wrench } from 'lucide-react';
 
-export default function EstimationCalculator() {
+interface EstimationCalculatorProps {
+    onOpenOrderModal?: () => void;
+}
+
+export default function EstimationCalculator({ onOpenOrderModal }: EstimationCalculatorProps) {
     const [estDevice, setEstDevice] = useState('laptop');
     const [estIssue, setEstIssue] = useState('lcd');
 
@@ -35,9 +39,9 @@ export default function EstimationCalculator() {
         <section id="estimasi" className="max-w-4xl mx-auto px-4 pt-20">
             <div className="bg-gradient-to-br from-slate-900 to-slate-950 text-white rounded-3xl p-6 sm:p-10 shadow-2xl border border-slate-800 space-y-6">
                 <div className="space-y-2 text-center sm:text-left">
-          <span className="text-xs font-bold text-blue-400 uppercase tracking-widest flex items-center justify-center sm:justify-start gap-1.5">
-            <Calculator className="w-4 h-4" /> Simulasi Biaya Instan
-          </span>
+                    <span className="text-xs font-bold text-blue-400 uppercase tracking-widest flex items-center justify-center sm:justify-start gap-1.5">
+                        <Calculator className="w-4 h-4" /> Simulasi Biaya Instan
+                    </span>
                     <h2 className="text-2xl sm:text-3xl font-black">Hitung Estimasi Biaya &amp; Waktu</h2>
                     <p className="text-xs text-slate-400">Pilih tipe perangkat dan indikasi masalah untuk mengetahui perkiraan biaya perbaikan.</p>
                 </div>
@@ -80,15 +84,25 @@ export default function EstimationCalculator() {
                         </p>
                     </div>
 
-                    <a
-                        href={`https://wa.me/6281234567890?text=Halo%20ElectroFix,%20saya%20mau%20konsultasi%20servis%20${estDevice}%20masalah%20${estIssue}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="w-full sm:w-auto px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all shrink-0"
-                    >
-                        <MessageCircle className="w-4 h-4" />
-                        <span>Konsultasi WA</span>
-                    </a>
+                    <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                        <button
+                            onClick={onOpenOrderModal}
+                            className="w-full sm:w-auto px-5 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-95 shadow-md shadow-blue-600/30"
+                        >
+                            <Wrench className="w-4 h-4" />
+                            <span>Servis Sekarang</span>
+                        </button>
+
+                        <a
+                            href={`https://wa.me/6281234567890?text=Halo%20ElectroFix,%20saya%20mau%20konsultasi%20servis%20${estDevice}%20masalah%20${estIssue}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="w-full sm:w-auto px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all shrink-0 cursor-pointer"
+                        >
+                            <MessageCircle className="w-4 h-4" />
+                            <span>Konsultasi WA</span>
+                        </a>
+                    </div>
                 </div>
             </div>
         </section>

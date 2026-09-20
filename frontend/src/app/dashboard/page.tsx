@@ -15,37 +15,6 @@ import {
     Loader2,
 } from 'lucide-react';
 
-const INITIAL_ORDERS = [
-    {
-        id: 'SVC-20260918-A101',
-        category: 'LAPTOP',
-        brand: 'ASUS',
-        model: 'ROG Zephyrus G14',
-        serialNumber: 'SN-ASUS-99201',
-        problem: 'Layar flicker dan kipas pendingin berbunyi bising saat bermain game berat.',
-        customerEmail: 'budi.santoso@example.com',
-        dateIn: '17 Sep 2026, 22.52',
-        status: 'COMPLETED',
-        estimatedCost: 850000,
-        finalCost: 500000,
-        technicianNotes: 'Pembersihan heatsink selesai, menunggu ganti modul layar LCD.',
-    },
-    {
-        id: 'SVC-20260918-B202',
-        category: 'SMARTPHONE',
-        brand: 'SAMSUNG',
-        model: 'Galaxy S23 Ultra',
-        serialNumber: 'SN-SAM-33012',
-        problem: 'Baterai bocor dan cepat panas saat digunakan.',
-        customerEmail: 'siti.rahma@example.com',
-        dateIn: '18 Sep 2026, 10.15',
-        status: 'IN_PROGRESS',
-        estimatedCost: 450000,
-        finalCost: 450000,
-        technicianNotes: 'Perlu penggantian modul baterai original.',
-    },
-];
-
 export default function DashboardPage() {
     const router = useRouter();
     const [user, setUser] = useState<any>(null);
@@ -69,13 +38,16 @@ export default function DashboardPage() {
         } else {
             setUser(currentUser);
 
-            // Sinkronisasi data dari localStorage
+            // Ambil semua data tiket dari "database" lokal (localStorage)
             const savedOrders = localStorage.getItem('electrofix_orders');
             if (savedOrders) {
-                setTickets(JSON.parse(savedOrders));
+                const allTickets = JSON.parse(savedOrders);
+                // Filter tiket HANYA milik user yang sedang login berdasarkan email
+                const userTickets = allTickets.filter((t: any) => t.customerEmail === currentUser.email);
+                setTickets(userTickets);
             } else {
-                localStorage.setItem('electrofix_orders', JSON.stringify(INITIAL_ORDERS));
-                setTickets(INITIAL_ORDERS);
+                // Jika belum ada tiket sama sekali di sistem, set state menjadi kosong
+                setTickets([]);
             }
         }
     }, [router]);
@@ -100,7 +72,7 @@ export default function DashboardPage() {
                 model,
                 serialNumber: serialNumber || '-',
                 problem,
-                customerEmail: user?.email || 'konsumen@example.com',
+                customerEmail: user.email, // Menggunakan email user yang sedang login secara dinamis
                 dateIn: new Date().toLocaleDateString('id-ID', {
                     day: '2-digit',
                     month: 'short',
@@ -114,13 +86,15 @@ export default function DashboardPage() {
                 technicianNotes: 'Tiket baru berhasil diajukan.',
             };
 
-            // Mengambil data lama dan menambahkan data baru ke posisi teratas
-            const existingOrders = JSON.parse(localStorage.getItem('electrofix_orders') || '[]');
-            const updatedOrders = [newTicket, ...existingOrders];
+            // 1. Ambil semua tiket yang ada di sistem (seluruh user)
+            const allOrders = JSON.parse(localStorage.getItem('electrofix_orders') || '[]');
 
-            // Simpan ke state & localStorage
-            localStorage.setItem('electrofix_orders', JSON.stringify(updatedOrders));
-            setTickets(updatedOrders);
+            // 2. Tambahkan tiket baru ini ke sistem global
+            const updatedAllOrders = [newTicket, ...allOrders];
+            localStorage.setItem('electrofix_orders', JSON.stringify(updatedAllOrders));
+
+            // 3. Update tampilan layar HANYA dengan tiket milik user ini
+            setTickets([newTicket, ...tickets]);
 
             // Reset form
             setBrand('');
@@ -137,9 +111,6 @@ export default function DashboardPage() {
 
     if (!user) return null;
 
-    // Filter tiket sesuai akun konsumen yang sedang login
-    const myTickets = tickets.filter((t) => t.customerEmail === user.email || tickets.length > 0);
-
     return (
         <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
             {/* Header Navbar Konsumen */}
@@ -149,14 +120,14 @@ export default function DashboardPage() {
                         <Wrench className="w-4 h-4" />
                     </div>
                     <span className="font-extrabold text-slate-900 tracking-tight text-lg">
-            ElectroFix <span className="text-blue-600 text-xs font-mono">PRO</span>
-          </span>
+                        ElectroFix <span className="text-blue-600 text-xs font-mono">PRO</span>
+                    </span>
                 </div>
 
                 <div className="flex items-center gap-4 text-xs">
-          <span className="text-slate-500">
-            Halo, <strong className="text-slate-800">{user.email}</strong>
-          </span>
+                    <span className="text-slate-500">
+                        Halo, <strong className="text-slate-800">{user.email}</strong>
+                    </span>
                     <button
                         onClick={handleLogout}
                         className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-medium transition-all cursor-pointer"
@@ -192,7 +163,7 @@ export default function DashboardPage() {
                         </div>
                         <div>
                             <p className="text-xs text-slate-400 font-semibold uppercase">TOTAL SERVIS</p>
-                            <p className="text-2xl font-black text-slate-800">{myTickets.length} Perangkat</p>
+                            <p className="text-2xl font-black text-slate-800">{tickets.length} Perangkat</p>
                         </div>
                     </div>
 
@@ -211,18 +182,18 @@ export default function DashboardPage() {
                 <div className="bg-white rounded-3xl border border-slate-200/80 p-6 space-y-4 shadow-sm">
                     <h2 className="font-bold text-slate-800 text-sm">Riwayat Tiket Servis Saya</h2>
 
-                    {myTickets.length > 0 ? (
+                    {tickets.length > 0 ? (
                         <div className="space-y-3">
-                            {myTickets.map((t) => (
+                            {tickets.map((t) => (
                                 <div
                                     key={t.id}
                                     className="border border-slate-100 rounded-2xl p-4 bg-slate-50/50 flex items-center justify-between hover:border-slate-200 transition-all"
                                 >
                                     <div>
                                         <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs font-mono font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-lg border border-blue-200">
-                        {t.id}
-                      </span>
+                                            <span className="text-xs font-mono font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-lg border border-blue-200">
+                                                {t.id}
+                                            </span>
                                             <span className="text-[11px] text-slate-400">{t.dateIn}</span>
                                         </div>
                                         <h3 className="font-bold text-slate-800 text-sm">
@@ -242,8 +213,8 @@ export default function DashboardPage() {
                                                         : 'bg-amber-100 text-amber-700'
                                         }`}
                                     >
-                    {t.status}
-                  </span>
+                                        {t.status}
+                                    </span>
                                 </div>
                             ))}
                         </div>

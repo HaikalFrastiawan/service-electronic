@@ -6,9 +6,10 @@ import { Wrench, LayoutGrid, Layers, Calculator, HelpCircle, ChevronDown, Laptop
 
 interface NavbarProps {
     onNavigate: (id: string) => void;
+    onOpenOrderModal?: () => void; // Tambahkan Prop Baru
 }
 
-export default function Navbar({ onNavigate }: NavbarProps) {
+export default function Navbar({ onNavigate, onOpenOrderModal }: NavbarProps) {
     const [openNavMenu, setOpenNavMenu] = useState<string | null>(null);
     const navRef = useRef<HTMLDivElement>(null);
 
@@ -112,7 +113,12 @@ export default function Navbar({ onNavigate }: NavbarProps) {
                     <Link href="/login" className="text-xs font-bold text-slate-600 hover:text-blue-600 px-3 py-2 hidden sm:block transition-colors">
                         Masuk
                     </Link>
-                    <button onClick={() => handleNavClick('estimasi')} className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-[11px] tracking-wider uppercase shadow-md shadow-blue-600/30 active:scale-95 transition-all cursor-pointer">
+
+                    {/* Ubah onClick di sini agar memicu Modal Order */}
+                    <button
+                        onClick={onOpenOrderModal}
+                        className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-[11px] tracking-wider uppercase shadow-md shadow-blue-600/30 active:scale-95 transition-all cursor-pointer"
+                    >
                         Servis Sekarang
                     </button>
                 </div>

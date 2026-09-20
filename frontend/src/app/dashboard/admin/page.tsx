@@ -16,43 +16,14 @@ import {
   Save,
   Laptop,
   User,
+  RefreshCw,
 } from 'lucide-react';
-
-const INITIAL_ORDERS = [
-  {
-    id: 'SVC-20260918-A101',
-    category: 'LAPTOP',
-    brand: 'ASUS',
-    model: 'ROG Zephyrus G14',
-    serialNumber: 'SN-ASUS-99201',
-    problem: 'Layar flicker dan kipas pendingin berbunyi bising saat bermain game berat.',
-    customerEmail: 'budi.santoso@example.com',
-    dateIn: '17 Sep 2026, 22.52',
-    status: 'COMPLETED',
-    estimatedCost: 850000,
-    finalCost: 500000,
-    technicianNotes: 'Pembersihan heatsink selesai, menunggu ganti modul layar LCD.',
-  },
-  {
-    id: 'SVC-20260918-B202',
-    category: 'SMARTPHONE',
-    brand: 'SAMSUNG',
-    model: 'Galaxy S23 Ultra',
-    serialNumber: 'SN-SAM-33012',
-    problem: 'Baterai bocor dan cepat panas saat digunakan.',
-    customerEmail: 'siti.rahma@example.com',
-    dateIn: '18 Sep 2026, 10.15',
-    status: 'IN_PROGRESS',
-    estimatedCost: 450000,
-    finalCost: 450000,
-    technicianNotes: 'Perlu penggantian modul baterai original.',
-  },
-];
 
 export default function AdminDashboard() {
   const router = useRouter();
   const [adminUser, setAdminUser] = useState<any>(null);
   const [orders, setOrders] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   // State Pencarian & Filter
   const [searchTerm, setSearchTerm] = useState('');
@@ -68,6 +39,30 @@ export default function AdminDashboard() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
 
+  // Fungsi Fetch Orders dari Backend API
+  const fetchOrders = async (token: string) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('http://localhost:8080/api/v1/service-orders', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const result = await response.json();
+      if (response.ok && result.data) {
+        setOrders(result.data);
+      } else {
+        console.error('Gagal mengambil data:', result.message);
+      }
+    } catch (error) {
+      console.error('Network error saat fetch orders:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
     const user = getAuthUser();
     if (!user || !user.token) {
@@ -76,15 +71,7 @@ export default function AdminDashboard() {
       router.replace('/dashboard');
     } else {
       setAdminUser(user);
-
-      // Muat data sinkron dari localStorage
-      const savedOrders = localStorage.getItem('electrofix_orders');
-      if (savedOrders) {
-        setOrders(JSON.parse(savedOrders));
-      } else {
-        localStorage.setItem('electrofix_orders', JSON.stringify(INITIAL_ORDERS));
-        setOrders(INITIAL_ORDERS);
-      }
+      fetchOrders(user.token);
     }
   }, [router]);
 
@@ -92,7 +79,7 @@ export default function AdminDashboard() {
     setSelectedOrder(order);
     setEditStatus(order.status || 'PENDING');
     setEditEstCost(order.estimatedCost || 0);
-    setEditFinalCost(order.finalCost || 0);
+    setEditFinalCost(order.finalCost || order.totalCost || 0);
     setEditNotes(order.technicianNotes || '');
     setSaveSuccess(null);
   };
@@ -102,34 +89,37 @@ export default function AdminDashboard() {
     setSaveSuccess(null);
   };
 
-  // Simpan Perubahan oleh Admin & Perbarui localStorage
+  // Simpan Perubahan Status Ke API Backend
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
     setSaveSuccess(null);
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 600));
+      const orderId = selectedOrder.id || selectedOrder.orderNumber;
+      const response = await fetch(`http://localhost:8080/api/v1/service-orders/${orderId}/status`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${adminUser.token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          status: editStatus,
+          estimatedCost: Number(editEstCost),
+          finalCost: Number(editFinalCost),
+          technicianNotes: editNotes,
+        }),
+      });
 
-      const updatedOrders = orders.map((ord) =>
-          ord.id === selectedOrder.id
-              ? {
-                ...ord,
-                status: editStatus,
-                estimatedCost: Number(editEstCost),
-                finalCost: Number(editFinalCost),
-                technicianNotes: editNotes,
-              }
-              : ord
-      );
-
-      setOrders(updatedOrders);
-      localStorage.setItem('electrofix_orders', JSON.stringify(updatedOrders));
-
-      setSaveSuccess('Perubahan berhasil disimpan!');
-      setTimeout(() => {
-        handleCloseDrawer();
-      }, 800);
+      if (response.ok) {
+        setSaveSuccess('Perubahan berhasil disimpan ke database!');
+        fetchOrders(adminUser.token); // Refresh data
+        setTimeout(() => {
+          handleCloseDrawer();
+        }, 800);
+      } else {
+        alert('Gagal memperbarui status order.');
+      }
     } catch (error) {
       console.error('Gagal menyimpan:', error);
     } finally {
@@ -144,11 +134,16 @@ export default function AdminDashboard() {
 
   // Logika Filter Data
   const filteredOrders = orders.filter((ord) => {
+    const orderNo = (ord.orderNumber || ord.id || '').toLowerCase();
+    const email = (ord.customerEmail || ord.userEmail || '').toLowerCase();
+    const brand = (ord.brand || '').toLowerCase();
+    const model = (ord.model || ord.modelName || '').toLowerCase();
+
     const matchSearch =
-        ord.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        ord.customerEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        ord.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        ord.model.toLowerCase().includes(searchTerm.toLowerCase());
+        orderNo.includes(searchTerm.toLowerCase()) ||
+        email.includes(searchTerm.toLowerCase()) ||
+        brand.includes(searchTerm.toLowerCase()) ||
+        model.includes(searchTerm.toLowerCase());
 
     const matchStatus = filterStatus === 'ALL' || ord.status === filterStatus;
 
@@ -253,7 +248,15 @@ export default function AdminDashboard() {
               </div>
 
               <div className="flex items-center gap-2 w-full sm:w-auto">
-                <Filter className="w-3.5 h-3.5 text-slate-400" />
+                <button
+                    onClick={() => fetchOrders(adminUser.token)}
+                    className="p-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-slate-600 transition-all flex items-center gap-1 text-xs font-semibold"
+                    title="Muat Ulang Data"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+                  <span>Refresh</span>
+                </button>
+                <Filter className="w-3.5 h-3.5 text-slate-400 ml-2" />
                 <select
                     value={filterStatus}
                     onChange={(e) => setFilterStatus(e.target.value)}
@@ -283,17 +286,24 @@ export default function AdminDashboard() {
                 </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 font-medium">
-                {filteredOrders.length > 0 ? (
+                {isLoading ? (
+                    <tr>
+                      <td colSpan={7} className="p-8 text-center text-slate-400">
+                        <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-blue-600" />
+                        Memuat data servis dari server...
+                      </td>
+                    </tr>
+                ) : filteredOrders.length > 0 ? (
                     filteredOrders.map((ord) => (
-                        <tr key={ord.id} className="hover:bg-slate-50/80 transition-colors">
-                          <td className="p-4 font-mono font-bold text-blue-600">{ord.id}</td>
+                        <tr key={ord.id || ord.orderNumber} className="hover:bg-slate-50/80 transition-colors">
+                          <td className="p-4 font-mono font-bold text-blue-600">{ord.orderNumber || ord.id}</td>
                           <td className="p-4">
                             <div className="font-bold text-slate-900">
-                              {ord.brand} {ord.model}
+                              {ord.brand} {ord.modelName || ord.model}
                             </div>
                             <div className="text-[10px] text-slate-400">{ord.category}</div>
                           </td>
-                          <td className="p-4 text-slate-700">{ord.customerEmail}</td>
+                          <td className="p-4 text-slate-700">{ord.customerEmail || ord.userEmail || '-'}</td>
                           <td className="p-4">
                         <span
                             className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold ${
@@ -310,9 +320,11 @@ export default function AdminDashboard() {
                         </span>
                           </td>
                           <td className="p-4 font-mono font-bold text-slate-900">
-                            Rp {Number(ord.finalCost).toLocaleString('id-ID')}
+                            Rp {Number(ord.finalCost || ord.totalCost || 0).toLocaleString('id-ID')}
                           </td>
-                          <td className="p-4 text-slate-500">{ord.dateIn}</td>
+                          <td className="p-4 text-slate-500">
+                            {ord.createdAt ? new Date(ord.createdAt).toLocaleString('id-ID') : ord.dateIn || '-'}
+                          </td>
                           <td className="p-4 text-right">
                             <button
                                 onClick={() => handleOpenDetail(ord)}
@@ -336,7 +348,7 @@ export default function AdminDashboard() {
           </div>
         </main>
 
-        {/* Drawer Drawer Edit */}
+        {/* Drawer Edit */}
         {selectedOrder && (
             <div className="fixed inset-0 z-50 overflow-hidden bg-slate-900/30 backdrop-blur-xs flex justify-end">
               <div className="w-full max-w-lg bg-white h-full shadow-2xl flex flex-col justify-between overflow-y-auto">
@@ -348,7 +360,9 @@ export default function AdminDashboard() {
                     {editStatus}
                   </span>
                     </div>
-                    <h2 className="text-xl font-mono font-black text-blue-600 mt-0.5">{selectedOrder.id}</h2>
+                    <h2 className="text-xl font-mono font-black text-blue-600 mt-0.5">
+                      {selectedOrder.orderNumber || selectedOrder.id}
+                    </h2>
                   </div>
                   <button
                       onClick={handleCloseDrawer}
@@ -375,16 +389,18 @@ export default function AdminDashboard() {
                       </div>
                       <div>
                         <span className="text-slate-400 text-[10px]">Model / Tipe</span>
-                        <p className="font-bold text-slate-800">{selectedOrder.model}</p>
+                        <p className="font-bold text-slate-800">{selectedOrder.modelName || selectedOrder.model}</p>
                       </div>
                       <div>
                         <span className="text-slate-400 text-[10px]">Serial Number</span>
-                        <p className="font-mono font-bold text-slate-800">{selectedOrder.serialNumber}</p>
+                        <p className="font-mono font-bold text-slate-800">{selectedOrder.serialNumber || '-'}</p>
                       </div>
                     </div>
                     <div className="pt-2 border-t border-slate-200/60">
                       <span className="text-slate-400 text-[10px] block">Deskripsi Keluhan</span>
-                      <p className="text-xs font-medium text-slate-700 mt-0.5">{selectedOrder.problem}</p>
+                      <p className="text-xs font-medium text-slate-700 mt-0.5">
+                        {selectedOrder.issueDescription || selectedOrder.problem}
+                      </p>
                     </div>
                   </div>
 
@@ -395,11 +411,15 @@ export default function AdminDashboard() {
                     </h3>
                     <div className="flex justify-between">
                       <span className="text-slate-400">Email:</span>
-                      <span className="font-mono font-bold text-slate-800">{selectedOrder.customerEmail}</span>
+                      <span className="font-mono font-bold text-slate-800">
+                    {selectedOrder.customerEmail || selectedOrder.userEmail || '-'}
+                  </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-slate-400">Tanggal Masuk:</span>
-                      <span className="font-bold text-slate-800">{selectedOrder.dateIn}</span>
+                      <span className="font-bold text-slate-800">
+                    {selectedOrder.createdAt ? new Date(selectedOrder.createdAt).toLocaleString('id-ID') : selectedOrder.dateIn}
+                  </span>
                     </div>
                   </div>
 

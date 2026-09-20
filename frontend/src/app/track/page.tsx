@@ -6,14 +6,11 @@ import Link from 'next/link';
 import {
     Wrench,
     Search,
-    ArrowLeft,
-    Clock,
-    CheckCircle2,
     AlertCircle,
     Laptop,
-    ShieldCheck,
     Calendar,
     FileText,
+    Loader2,
 } from 'lucide-react';
 
 function TrackContent() {
@@ -24,6 +21,7 @@ function TrackContent() {
     const [inputResi, setInputResi] = useState(resiFromUrl);
     const [ticket, setTicket] = useState<any>(null);
     const [searched, setSearched] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
 
     // Cari otomatis jika ada query parameter ?resi=
     useEffect(() => {
@@ -33,19 +31,27 @@ function TrackContent() {
         }
     }, [resiFromUrl]);
 
-    const searchTicket = (resi: string) => {
+    // Mengambil data tracking dari API Backend Spring Boot
+    const searchTicket = async (resi: string) => {
         if (!resi.trim()) return;
         setSearched(true);
+        setIsLoading(true);
 
-        const savedOrders = localStorage.getItem('electrofix_orders');
-        if (savedOrders) {
-            const orders = JSON.parse(savedOrders);
-            const found = orders.find(
-                (o: any) => o.id.toLowerCase().trim() === resi.toLowerCase().trim()
-            );
-            setTicket(found || null);
-        } else {
+        try {
+            // Memanggil API backend publik tanpa butuh token JWT
+            const response = await fetch(`http://localhost:8080/api/v1/service-orders/track/${encodeURIComponent(resi.trim())}`);
+            const result = await response.json();
+
+            if (response.ok && result.data) {
+                setTicket(result.data);
+            } else {
+                setTicket(null);
+            }
+        } catch (error) {
+            console.error('Gagal mengambil data resi:', error);
             setTicket(null);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -65,8 +71,8 @@ function TrackContent() {
                         <Wrench className="w-4 h-4" />
                     </div>
                     <span className="font-extrabold text-slate-900 tracking-tight text-lg">
-            ElectroFix <span className="text-blue-600 text-xs font-mono">PRO</span>
-          </span>
+                        ElectroFix <span className="text-blue-600 text-xs font-mono">PRO</span>
+                    </span>
                 </Link>
 
                 <Link
@@ -101,24 +107,34 @@ function TrackContent() {
                     </div>
                     <button
                         type="submit"
-                        className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-2xl shadow-md shadow-blue-600/20 transition-all cursor-pointer shrink-0"
+                        disabled={isLoading}
+                        className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-2xl shadow-md shadow-blue-600/20 transition-all cursor-pointer shrink-0 disabled:opacity-50 flex items-center gap-2"
                     >
-                        Lacak Resi
+                        {isLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                        <span>Lacak Resi</span>
                     </button>
                 </form>
 
+                {/* Loading State */}
+                {isLoading && (
+                    <div className="bg-white rounded-3xl border border-slate-200 p-8 text-center space-y-3">
+                        <Loader2 className="w-8 h-8 text-blue-600 animate-spin mx-auto" />
+                        <p className="text-xs text-slate-500 font-medium">Mencari data perbaikan di server...</p>
+                    </div>
+                )}
+
                 {/* Hasil Pencarian */}
-                {searched && (
+                {!isLoading && searched && (
                     <div>
                         {ticket ? (
                             <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-sm space-y-6 animate-in fade-in zoom-in-95 duration-200">
                                 {/* Header Status Resi */}
                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
                                     <div>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                      Nomor Resi Perbaikan
-                    </span>
-                                        <h2 className="text-xl font-mono font-black text-blue-600">{ticket.id}</h2>
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                            Nomor Resi Perbaikan
+                                        </span>
+                                        <h2 className="text-xl font-mono font-black text-blue-600">{ticket.orderNumber || ticket.id}</h2>
                                     </div>
 
                                     <span
@@ -132,8 +148,8 @@ function TrackContent() {
                                                         : 'bg-amber-100 text-amber-700 border border-amber-200'
                                         }`}
                                     >
-                    {ticket.status}
-                  </span>
+                                        {ticket.status}
+                                    </span>
                                 </div>
 
                                 {/* Detail Perangkat */}
@@ -144,7 +160,7 @@ function TrackContent() {
                                             <span>PERANGKAT</span>
                                         </div>
                                         <p className="font-bold text-slate-800 text-sm">
-                                            {ticket.brand} {ticket.model}
+                                            {ticket.brand} {ticket.modelName || ticket.model}
                                         </p>
                                         <p className="text-[11px] text-slate-500 font-mono">SN: {ticket.serialNumber || '-'}</p>
                                     </div>
@@ -154,7 +170,9 @@ function TrackContent() {
                                             <Calendar className="w-3.5 h-3.5 text-blue-600" />
                                             <span>TANGGAL MASUK</span>
                                         </div>
-                                        <p className="font-bold text-slate-800 text-sm">{ticket.dateIn}</p>
+                                        <p className="font-bold text-slate-800 text-sm">
+                                            {ticket.createdAt ? new Date(ticket.createdAt).toLocaleDateString('id-ID') : ticket.dateIn || '-'}
+                                        </p>
                                         <p className="text-[11px] text-slate-500">Kategori: {ticket.category}</p>
                                     </div>
                                 </div>
@@ -162,7 +180,7 @@ function TrackContent() {
                                 {/* Kendala / Keluhan */}
                                 <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-1">
                                     <span className="text-[10px] font-bold text-slate-400 uppercase">Keluhan Kerusakan</span>
-                                    <p className="text-xs text-slate-700">{ticket.problem}</p>
+                                    <p className="text-xs text-slate-700">{ticket.issueDescription || ticket.problem}</p>
                                 </div>
 
                                 {/* Catatan Teknisi */}
@@ -180,8 +198,8 @@ function TrackContent() {
                                 <div className="pt-2 flex items-center justify-between text-xs border-t border-slate-100">
                                     <span className="text-slate-500 font-semibold">Total Biaya Perbaikan:</span>
                                     <span className="text-base font-mono font-black text-slate-900">
-                    Rp {Number(ticket.finalCost || ticket.estimatedCost || 0).toLocaleString('id-ID')}
-                  </span>
+                                        Rp {Number(ticket.totalCost || ticket.finalCost || ticket.estimatedCost || 0).toLocaleString('id-ID')}
+                                    </span>
                                 </div>
                             </div>
                         ) : (

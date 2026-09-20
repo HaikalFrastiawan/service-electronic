@@ -26,11 +26,17 @@ public class ServiceOrderController {
             @Valid @RequestBody CreateServiceOrderRequest request,
             Authentication authentication
     ) {
-        String customerEmail = authentication != null ? authentication.getName() : null;
-        ServiceOrderResponse response = serviceOrderService.createOrder(request, customerEmail);
+        // Jika user login, ambil emailnya. Jika tidak login (publik), atur sebagai null
+        String authenticatedEmail = (authentication != null && authentication.isAuthenticated())
+                ? authentication.getName()
+                : null;
+
+        ServiceOrderResponse response = serviceOrderService.createOrder(request, authenticatedEmail);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(
                 WebResponse.<ServiceOrderResponse>builder()
+                        .success(true)
+                        .message("Pesanan servis berhasil dibuat")
                         .data(response)
                         .build()
         );
@@ -41,6 +47,7 @@ public class ServiceOrderController {
         ServiceOrderResponse response = serviceOrderService.getOrderByNumber(orderNumber);
         return ResponseEntity.ok(
                 WebResponse.<ServiceOrderResponse>builder()
+                        .success(true)
                         .data(response)
                         .build()
         );
@@ -51,6 +58,7 @@ public class ServiceOrderController {
         List<ServiceOrderResponse> responses = serviceOrderService.getAllOrders();
         return ResponseEntity.ok(
                 WebResponse.<List<ServiceOrderResponse>>builder()
+                        .success(true)
                         .data(responses)
                         .build()
         );
@@ -65,6 +73,8 @@ public class ServiceOrderController {
 
         return ResponseEntity.ok(
                 WebResponse.<ServiceOrderResponse>builder()
+                        .success(true)
+                        .message("Status pesanan berhasil diperbarui")
                         .data(response)
                         .build()
         );

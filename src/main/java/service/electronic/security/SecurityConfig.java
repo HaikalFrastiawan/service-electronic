@@ -58,9 +58,16 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/service-orders/track/**").permitAll()
+
+                        // IZINKAN POST ORDER TANPA LOGIN
                         .requestMatchers(HttpMethod.POST, "/api/v1/service-orders").permitAll()
+                        //Tracking
+                        .requestMatchers(HttpMethod.GET, "/api/v1/service-orders/track/**").permitAll()
+
+                        // SISANYA WAJIB LOGIN
                         .requestMatchers("/api/v1/service-orders/**").authenticated()
                         .anyRequest().authenticated()
+
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
