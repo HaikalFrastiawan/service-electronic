@@ -8,7 +8,7 @@ import java.math.BigDecimal;
 @Data
 @Builder
 public class SparePartResponse {
-    private String id;
+    private Long id;
     private String partCode;
     private String partName;
     private String category;

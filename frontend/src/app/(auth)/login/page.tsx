@@ -24,8 +24,6 @@ export default function LoginPage() {
 
             // MENGARAHKAN BERDASARKAN ROLE
             if (res.role === 'ROLE_ADMIN') {
-                router.push('/dashboard/admin');
-            } else {
                 router.push('/dashboard');
             }
         } catch (err: any) {

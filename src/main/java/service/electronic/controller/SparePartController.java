@@ -1,6 +1,7 @@
 package service.electronic.controller;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import service.electronic.dto.SparePartRequest;
@@ -10,7 +11,9 @@ import service.electronic.service.SparePartService;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/v1/spare-parts")
+// Mendukung pemanggilan dari /api/spareparts maupun /api/v1/spare-parts
+@RequestMapping({"/api/v1/spare-parts", "/api/spareparts"})
+@CrossOrigin(origins = "*")
 @RequiredArgsConstructor
 public class SparePartController {
 
@@ -23,7 +26,7 @@ public class SparePartController {
 
     @PostMapping
     public ResponseEntity<SparePartResponse> createPart(@RequestBody SparePartRequest request) {
-        return ResponseEntity.ok(sparePartService.createPart(request));
+        return ResponseEntity.status(HttpStatus.CREATED).body(sparePartService.createPart(request));
     }
 
     @PutMapping("/{id}")

@@ -9,7 +9,6 @@ import service.electronic.dto.CreateServiceOrderRequest;
 import service.electronic.dto.ServiceOrderResponse;
 import service.electronic.dto.UpdateServiceStatusRequest;
 import service.electronic.entity.*;
-import service.electronic.repository.ServiceOrderPartRepository;
 import service.electronic.repository.ServiceOrderRepository;
 import service.electronic.repository.SparePartRepository;
 import service.electronic.repository.UserRepository;
@@ -28,7 +27,6 @@ public class ServiceOrderService {
     private final ServiceOrderRepository serviceOrderRepository;
     private final UserRepository userRepository;
     private final SparePartRepository sparePartRepository;
-    private  final ServiceOrderPartRepository serviceOrderPartRepository;
 
     @Transactional
     public ServiceOrderResponse createOrder(CreateServiceOrderRequest request, String customerEmail) {
@@ -112,7 +110,7 @@ public class ServiceOrderService {
             order.setCompletionNotes(request.getCompletionNotes());
         }
         if (request.getTechnicianId() != null) {
-            User technician = userRepository.findById(request.getTechnicianId())
+            User technician = userRepository.findById(String.valueOf(request.getTechnicianId()))
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Teknisi tidak ditemukan"));
             order.setTechnician(technician);
         }
@@ -121,6 +119,42 @@ public class ServiceOrderService {
         return mapToResponse(updatedOrder);
     }
 
+    @Transactional
+    public ServiceOrderResponse addSparePartToOrder(String orderId, Long sparePartId, Integer quantity) {
+        // 1. Cari Pesanan berdasarkan ID (String)
+        ServiceOrder order = serviceOrderRepository.findById(orderId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pesanan tidak ditemukan"));
+
+        // 2. Cari SparePart berdasarkan ID (Long)
+        SparePart sparePart = sparePartRepository.findById(sparePartId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Sparepart tidak ditemukan"));
+
+        // 3. Validasi Kecukupan Stok
+        if (sparePart.getStockQuantity() < quantity) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Stok sparepart tidak mencukupi");
+        }
+
+        // 4. Potong Stok & Simpan Perubahan Sparepart
+        sparePart.setStockQuantity(sparePart.getStockQuantity() - quantity);
+        sparePartRepository.save(sparePart);
+
+        // 5. Tambahkan Biaya Sparepart ke Total Biaya Pesanan (dengan BigDecimal)
+        BigDecimal unitPrice = sparePart.getSellingPrice() != null
+                ? BigDecimal.valueOf(sparePart.getSellingPrice().doubleValue())
+                : BigDecimal.ZERO;
+        BigDecimal additionalCost = unitPrice.multiply(BigDecimal.valueOf(quantity));
+
+        BigDecimal currentTotal = order.getTotalCost() != null ? order.getTotalCost() : BigDecimal.ZERO;
+        order.setTotalCost(currentTotal.add(additionalCost));
+
+        // 6. Simpan Perubahan Pesanan
+        ServiceOrder updatedOrder = serviceOrderRepository.save(order);
+
+        // 7. Kembalikan Response DTO
+        return mapToResponse(updatedOrder);
+    }
+
+    // Mapper DTO tunggal
     private ServiceOrderResponse mapToResponse(ServiceOrder order) {
         return ServiceOrderResponse.builder()
                 .id(order.getId())
@@ -140,39 +174,5 @@ public class ServiceOrderService {
                 .customerEmail(order.getCustomer() != null ? order.getCustomer().getEmail() : null)
                 .technicianEmail(order.getTechnician() != null ? order.getTechnician().getEmail() : null)
                 .build();
-    }
-    @Transactional
-    public ServiceOrderResponse addSparePartToOrder(String orderId, String sparePartId, Integer quantity) {
-        ServiceOrder order = serviceOrderRepository.findById(orderId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pesanan tidak ditemukan"));
-
-        SparePart sparePart = sparePartRepository.findById(sparePartId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Sparepart tidak ditemukan"));
-
-        if (sparePart.getStockQuantity() < quantity) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Stok sparepart tidak mencukupi");
-        }
-
-        // Potong Stok
-        sparePart.setStockQuantity(sparePart.getStockQuantity() - quantity);
-        sparePartRepository.save(sparePart);
-
-        BigDecimal subtotal = sparePart.getSellingPrice().multiply(BigDecimal.valueOf(quantity));
-
-        ServiceOrderPart orderPart = ServiceOrderPart.builder()
-                .serviceOrder(order)
-                .sparePart(sparePart)
-                .quantity(quantity)
-                .subtotal(subtotal)
-                .build();
-
-        serviceOrderPartRepository.save(orderPart);
-
-        // Update Total Biaya pada Pesanan
-        BigDecimal currentTotal = order.getTotalCost() != null ? order.getTotalCost() : BigDecimal.ZERO;
-        order.setTotalCost(currentTotal.add(subtotal));
-
-        ServiceOrder updatedOrder = serviceOrderRepository.save(order);
-        return mapToResponse(updatedOrder);
     }
 }

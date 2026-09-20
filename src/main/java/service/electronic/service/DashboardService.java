@@ -19,15 +19,25 @@ public class DashboardService {
 
     @Transactional(readOnly = true)
     public DashboardSummaryResponse getSummary() {
+        // 1. Cek total pendapatan (berikan BigDecimal.ZERO jika hasil SUM null/kosong)
         BigDecimal totalRevenue = serviceOrderRepository.calculateTotalRevenue();
+        if (totalRevenue == null) {
+            totalRevenue = BigDecimal.ZERO;
+        }
 
+        // 2. Hitung jumlah pesanan berdasarkan status
         long pending = serviceOrderRepository.countByStatus(ServiceStatus.PENDING);
         long inRepair = serviceOrderRepository.countByStatus(ServiceStatus.IN_PROGRESS);
         long waitingParts = serviceOrderRepository.countByStatus(ServiceStatus.WAITING_PARTS);
         long completed = serviceOrderRepository.countByStatus(ServiceStatus.COMPLETED);
 
-        long lowStockCount = sparePartRepository.findLowStockParts().size();
+        // 3. Hitung jumlah sparepart yang stoknya menipis
+        long lowStockCount = 0;
+        if (sparePartRepository.findLowStockParts() != null) {
+            lowStockCount = sparePartRepository.findLowStockParts().size();
+        }
 
+        // 4. Buka & kembalikan response DTO
         return DashboardSummaryResponse.builder()
                 .totalRevenue(totalRevenue)
                 .activeOrdersCount(pending + inRepair + waitingParts)

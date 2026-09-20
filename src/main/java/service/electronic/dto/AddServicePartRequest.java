@@ -4,6 +4,6 @@ import lombok.Data;
 
 @Data
 public class AddServicePartRequest {
-    private String sparePartId;
+    private Long sparePartId;
     private Integer quantity;
 }

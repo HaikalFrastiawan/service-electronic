@@ -38,21 +38,23 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // 1. Endpoint Error & Auth Publik
+                        // 1. Endpoint Error & Auth
                         .requestMatchers("/error").permitAll()
-                        .requestMatchers("/api/v1/auth/**").permitAll()
+                        .requestMatchers("/api/v1/auth/**", "/api/auth/**").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                        // 2. PUBLIK: Lacak Resi & Buat Pesanan Baru (TIDAK BUTUH LOGIN)
-                        .requestMatchers("/api/v1/service-orders/track/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/v1/service-orders", "/api/v1/service-orders/").permitAll()
+                        // 2. PUBLIK: Izinkan SEMUA Endpoint Service Orders & Spareparts
+                        .requestMatchers(
+                                "/api/spareparts/**",
+                                "/api/v1/spare-parts/**",
+                                "/api/service-orders/**",
+                                "/api/v1/service-orders/**" // <--- Pastikan baris ini ada di sini (sebelum .anyRequest)
+                        ).permitAll()
 
-                        // 3. ADMIN ONLY: Dashboard, Spareparts, & Manajemen Pesanan
+                        // 3. ADMIN ONLY: Khusus Dashboard jika ada
                         .requestMatchers("/api/v1/dashboard/**").hasAnyAuthority("ROLE_ADMIN", "ADMIN")
-                        .requestMatchers("/api/v1/spare-parts/**").hasAnyAuthority("ROLE_ADMIN", "ADMIN")
-                        .requestMatchers("/api/v1/service-orders/**").hasAnyAuthority("ROLE_ADMIN", "ADMIN")
 
-                        // 4. Sisa request lainnya wajib login
+                        // 4. Sisa request lainnya
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())

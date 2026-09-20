@@ -1,6 +1,5 @@
 package service.electronic.dto;
 
-import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -10,19 +9,17 @@ import service.electronic.entity.ServiceStatus;
 import java.math.BigDecimal;
 
 @Data
-@AllArgsConstructor
-@NoArgsConstructor
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class UpdateServiceStatusRequest {
-
-    @NotNull(message = "Status perbaikan wajib diisi")
     private ServiceStatus status;
-
     private BigDecimal estimatedCost;
-
     private BigDecimal totalCost;
-
     private String completionNotes;
+    private Long technicianId;
 
-    private String technicianId;
+    // Tambahkan field ini agar input sparepart dari modal tidak ditolak Spring Boot
+    private Long sparePartId;
+    private Integer quantity;
 }

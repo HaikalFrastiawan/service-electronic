@@ -29,10 +29,22 @@ public class SparePartService {
 
     @Transactional
     public SparePartResponse createPart(SparePartRequest request) {
+        String category = (request.getCategory() != null && !request.getCategory().isBlank())
+                ? request.getCategory().trim().toUpperCase()
+                : "GEN";
+
+        long count = sparePartRepository.countByCategoryIgnoreCase(category) + 1;
+        String generatedPartCode = String.format("PRT-%s-%03d", category, count);
+
+        String rawName = request.getPartName() != null ? request.getPartName().trim() : "";
+        String formattedName = rawName.startsWith("[" + category + "]")
+                ? rawName
+                : String.format("[%s] %s", category, rawName);
+
         SparePart sparePart = SparePart.builder()
-                .partCode(request.getPartCode())
-                .partName(request.getPartName())
-                .category(request.getCategory())
+                .partCode(generatedPartCode)
+                .partName(formattedName)
+                .category(category)
                 .stockQuantity(request.getStockQuantity())
                 .purchasePrice(request.getPurchasePrice())
                 .sellingPrice(request.getSellingPrice())
@@ -43,12 +55,21 @@ public class SparePartService {
     }
 
     @Transactional
-    public SparePartResponse updatePart(String id, SparePartRequest request) {
+    public SparePartResponse updatePart(Long id, SparePartRequest request) {
         SparePart sparePart = sparePartRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Sparepart tidak ditemukan"));
 
-        sparePart.setPartName(request.getPartName());
-        sparePart.setCategory(request.getCategory());
+        String category = (request.getCategory() != null && !request.getCategory().isBlank())
+                ? request.getCategory().trim().toUpperCase()
+                : sparePart.getCategory();
+
+        String rawName = request.getPartName() != null ? request.getPartName().trim() : "";
+        String formattedName = rawName.startsWith("[" + category + "]")
+                ? rawName
+                : String.format("[%s] %s", category, rawName);
+
+        sparePart.setPartName(formattedName);
+        sparePart.setCategory(category);
         sparePart.setStockQuantity(request.getStockQuantity());
         sparePart.setPurchasePrice(request.getPurchasePrice());
         sparePart.setSellingPrice(request.getSellingPrice());
@@ -61,11 +82,21 @@ public class SparePartService {
     }
 
     @Transactional
-    public void deletePart(String id) {
+    public SparePartResponse updatePart(String id, SparePartRequest request) {
+        return updatePart(Long.parseLong(id), request);
+    }
+
+    @Transactional
+    public void deletePart(Long id) {
         if (!sparePartRepository.existsById(id)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Sparepart tidak ditemukan");
         }
         sparePartRepository.deleteById(id);
+    }
+
+    @Transactional
+    public void deletePart(String id) {
+        deletePart(Long.parseLong(id));
     }
 
     private SparePartResponse mapToResponse(SparePart part) {
@@ -78,7 +109,6 @@ public class SparePartService {
                 .purchasePrice(part.getPurchasePrice())
                 .sellingPrice(part.getSellingPrice())
                 .minStockWarning(part.getMinStockWarning())
-                .isLowStock(part.getStockQuantity() <= part.getMinStockWarning())
                 .build();
     }
 }

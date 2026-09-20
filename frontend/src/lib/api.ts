@@ -1,9 +1,12 @@
 import {
   AuthResponse,
   CreateServiceOrderRequest,
+  DashboardSummary,
   LoginRequest,
   RegisterRequest,
   ServiceOrderResponse,
+  SparePart,
+  SparePartRequest,
   UpdateServiceStatusRequest,
   UserRole,
   WebResponse,
@@ -38,7 +41,7 @@ function parseErrorMessage(json: any, fallbackMessage: string): string {
   return fallbackMessage;
 }
 
-// ─── Auth Storage Helpers (Diselaraskan) ───────────────────────────────────────
+// ─── Auth Storage Helpers ─────────────────────────────────────────────────────
 
 export function getAuthToken(): string | null {
   if (typeof window === 'undefined') return null;
@@ -152,7 +155,7 @@ export async function registerUser(data: RegisterRequest): Promise<AuthResponse>
   }
 }
 
-// ─── Fallback Mock Data ─────────────────────────────────────────────────────────
+// ─── Fallback Mock Store ─────────────────────────────────────────────────────────
 
 const MOCK_ORDERS: ServiceOrderResponse[] = [
   {
@@ -172,7 +175,33 @@ const MOCK_ORDERS: ServiceOrderResponse[] = [
   },
 ];
 
+const MOCK_SPARE_PARTS: SparePart[] = [
+  {
+    id: 'sp-1',
+    partCode: 'LCD-ASUS-14',
+    partName: 'Layar LCD LED 14.0 Full HD 144Hz',
+    category: 'Layar',
+    stockQuantity: 3,
+    purchasePrice: 650000,
+    sellingPrice: 850000,
+    minStockWarning: 5,
+    isLowStock: true,
+  },
+  {
+    id: 'sp-2',
+    partCode: 'FAN-ROG-G14',
+    partName: 'Kipas Pendingin Dual Fan CPU/GPU',
+    category: 'Cooling',
+    stockQuantity: 12,
+    purchasePrice: 120000,
+    sellingPrice: 180000,
+    minStockWarning: 5,
+    isLowStock: false,
+  },
+];
+
 let localOrdersStore: ServiceOrderResponse[] = [...MOCK_ORDERS];
+let localSparePartsStore: SparePart[] = [...MOCK_SPARE_PARTS];
 
 // ─── Service Order API ─────────────────────────────────────────────────────────
 
@@ -185,8 +214,8 @@ export async function trackOrder(orderNumber: string): Promise<ServiceOrderRespo
     });
 
     if (res.ok) {
-      const json: WebResponse<ServiceOrderResponse> = await res.json();
-      return json.data;
+      const json = await res.json();
+      return json.data || json;
     }
   } catch (err) {
     console.warn('Backend API unreachable, using local store for order track:', err);
@@ -207,8 +236,8 @@ export async function fetchAllOrders(): Promise<ServiceOrderResponse[]> {
     });
 
     if (res.ok) {
-      const json: WebResponse<ServiceOrderResponse[]> = await res.json();
-      return json.data;
+      const json = await res.json();
+      return json.data || json;
     }
 
     if (res.status === 401 || res.status === 403) {
@@ -234,8 +263,8 @@ export async function createServiceOrder(data: CreateServiceOrderRequest): Promi
     });
 
     if (res.ok) {
-      const json: WebResponse<ServiceOrderResponse> = await res.json();
-      return json.data;
+      const json = await res.json();
+      return json.data || json;
     }
   } catch (err) {
     console.warn('Backend API unreachable, creating order in local store:', err);
@@ -272,8 +301,8 @@ export async function updateOrderStatusApi(orderId: string, data: UpdateServiceS
     });
 
     if (res.ok) {
-      const json: WebResponse<ServiceOrderResponse> = await res.json();
-      return json.data;
+      const json = await res.json();
+      return json.data || json;
     }
   } catch (err) {
     console.warn('Backend API unreachable, updating local store:', err);
@@ -293,4 +322,190 @@ export async function updateOrderStatusApi(orderId: string, data: UpdateServiceS
   }
 
   throw new Error('Order tidak ditemukan');
+}
+
+// ─── Dashboard Summary API ────────────────────────────────────────────────────
+
+export async function fetchDashboardSummary(): Promise<DashboardSummary> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/dashboard/summary`, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+      cache: 'no-store',
+    });
+
+    if (res.ok) {
+      const json = await res.json();
+      return json.data || json;
+    }
+  } catch (err) {
+    console.warn('Backend API unreachable, calculating mock summary:', err);
+  }
+
+  const lowStockCount = localSparePartsStore.filter(sp => sp.stockQuantity <= (sp.minStockWarning || 5)).length;
+  const activeOrders = localOrdersStore.filter(o => o.status !== 'COMPLETED' && o.status !== 'CANCELLED').length;
+  const waitingParts = localOrdersStore.filter(o => o.status === 'WAITING_PARTS').length;
+
+  return {
+    totalRevenue: 850000,
+    activeOrdersCount: activeOrders,
+    inRepairCount: localOrdersStore.filter(o => o.status === 'IN_PROGRESS').length,
+    waitingPartsCount: waitingParts,
+    completedTodayCount: localOrdersStore.filter(o => o.status === 'COMPLETED').length,
+    lowStockPartsCount: lowStockCount,
+  };
+}
+
+// ─── Spare Parts API ──────────────────────────────────────────────────────────
+
+export async function fetchSpareParts(): Promise<SparePart[]> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/spare-parts`, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+      cache: 'no-store',
+    });
+
+    if (res.ok) {
+      const json = await res.json();
+      return Array.isArray(json) ? json : (json.data || []);
+    }
+  } catch (err) {
+    console.warn('Backend API unreachable, using local store for spare parts:', err);
+  }
+
+  return localSparePartsStore;
+}
+export async function createSparePart(data: SparePartRequest): Promise<SparePart> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/spare-parts`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+
+    if (res.ok) {
+      const json = await res.json();
+      return json.data || json;
+    }
+  } catch (err) {
+    console.warn('Backend API unreachable, creating spare part in local store:', err);
+  }
+
+  const minWarning = data.minStockWarning ?? 5;
+  const newPart: SparePart = {
+    id: `sp-${Date.now()}`,
+    ...data,
+    minStockWarning: minWarning,
+    isLowStock: data.stockQuantity <= minWarning,
+  };
+
+  localSparePartsStore = [newPart, ...localSparePartsStore];
+  return newPart;
+}
+
+export async function updateSparePart(id: string, data: SparePartRequest): Promise<SparePart> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/spare-parts/${id}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+
+    if (res.ok) {
+      const json = await res.json();
+      return json.data || json;
+    }
+  } catch (err) {
+    console.warn('Backend API unreachable, updating spare part in local store:', err);
+  }
+
+  const index = localSparePartsStore.findIndex((p) => p.id === id);
+  if (index !== -1) {
+    const minWarning = data.minStockWarning ?? 5;
+    localSparePartsStore[index] = {
+      ...localSparePartsStore[index],
+      ...data,
+      minStockWarning: minWarning,
+      isLowStock: data.stockQuantity <= minWarning,
+    };
+    return localSparePartsStore[index];
+  }
+
+  throw new Error('Spare part tidak ditemukan');
+}
+export async function deleteSparePart(id: string): Promise<void> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/spare-parts/${id}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    });
+
+    if (res.ok) return;
+  } catch (err) {
+    console.warn('Backend API unreachable, deleting spare part from local store:', err);
+  }
+
+  localSparePartsStore = localSparePartsStore.filter((p) => p.id !== id);
+}
+
+export async function addSparePartToOrder(orderId: string, sparePartId: string, quantity: number): Promise<ServiceOrderResponse> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/service-orders/${orderId}/parts`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ sparePartId, quantity }),
+    });
+
+    if (res.ok) {
+      const json = await res.json();
+      return json.data || json;
+    }
+  } catch (err) {
+    console.warn('Backend API unreachable, adding spare part to order in local store:', err);
+  }
+
+  const orderIndex = localOrdersStore.findIndex((o) => o.id === orderId);
+  const partIndex = localSparePartsStore.findIndex((p) => p.id === sparePartId);
+
+  if (orderIndex !== -1 && partIndex !== -1) {
+    const part = localSparePartsStore[partIndex];
+    if (part.stockQuantity < quantity) {
+      throw new Error('Stok sparepart tidak mencukupi');
+    }
+
+    part.stockQuantity -= quantity;
+    part.isLowStock = part.stockQuantity <= (part.minStockWarning || 5);
+
+    const additionalCost = part.sellingPrice * quantity;
+    const currentTotal = localOrdersStore[orderIndex].totalCost || 0;
+    localOrdersStore[orderIndex].totalCost = currentTotal + additionalCost;
+
+    return localOrdersStore[orderIndex];
+  }
+
+  throw new Error('Order atau Sparepart tidak ditemukan');
+
+}
+export async function fetchSpareparts() {
+  try {
+    // Sesuaikan URL ini dengan controller Spring Boot kamu
+    const response = await fetch("http://localhost:8080/api/spareparts", {
+      headers: {
+        "Content-Type": "application/json",
+      },
+      cache: "no-store",
+    });
+
+    // Jika response HTTP tidak OK (cth: 404 / 500), kembalikan array kosong agar frontend tidak crash
+    if (!response.ok) {
+      console.warn("API Sparepart mengembalikan status:", response.status);
+      return [];
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Gagal terhubung ke server sparepart:", error);
+    return []; // Return array kosong sebagai aman
+  }
 }

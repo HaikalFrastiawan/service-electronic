@@ -66,3 +66,34 @@ export interface WebResponse<T> {
   data: T;
   errors?: unknown;
 }
+
+export interface SparePart {
+  id?: string;
+  partCode: string;
+  partName: string;
+  category: string;
+  stockQuantity: number;
+  purchasePrice: number;
+  sellingPrice: number;
+  minStockWarning?: number;
+  isLowStock?: boolean;
+}
+
+export interface SparePartRequest {
+  partCode: string;
+  partName: string;
+  category: string;
+  stockQuantity: number;
+  purchasePrice: number;
+  sellingPrice: number;
+  minStockWarning?: number;
+}
+
+export interface DashboardSummary {
+  totalRevenue: number;
+  activeOrdersCount: number;
+  inRepairCount: number;
+  waitingPartsCount: number;
+  completedTodayCount: number;
+  lowStockPartsCount: number;
+}
