@@ -55,7 +55,7 @@ export default function TrackingSection() {
                     </div>
                     <div className="px-2 space-y-0.5">
                         <p className="text-xl sm:text-3xl font-black text-slate-900 font-mono tracking-tight flex items-center justify-center gap-1">
-                            4.9 <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
+                             4.9 <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
                         </p>
                         <p className="text-[11px] font-semibold text-slate-400">Rating Google</p>
                     </div>

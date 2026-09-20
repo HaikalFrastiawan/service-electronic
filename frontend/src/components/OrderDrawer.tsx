@@ -33,11 +33,22 @@ export const OrderDrawer: React.FC<OrderDrawerProps> = ({ order, isOpen, onClose
   }, [order]);
 
   if (!order) return null;
+  const formatCategory = (categoryRaw: string) => {
+    const categoryLabels: Record<string, string> = {
+      GADGET_COMPUTER: 'Gadget & Komputer',
+      AUDIO_VIDEO: 'Audio & Video',
+      HOME_APPLIANCES: 'Elektronik Rumah Tangga',
+      OTHER: 'Lain-lain',
+    };
+    return categoryLabels[categoryRaw] || categoryRaw;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     setSuccessMessage(null);
+
+
 
     try {
       const updateData: UpdateServiceStatusRequest = {

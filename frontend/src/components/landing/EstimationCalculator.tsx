@@ -8,28 +8,34 @@ interface EstimationCalculatorProps {
 }
 
 export default function EstimationCalculator({ onOpenOrderModal }: EstimationCalculatorProps) {
-    const [estDevice, setEstDevice] = useState('laptop');
+    const [estDevice, setEstDevice] = useState('GADGET_COMPUTER');
     const [estIssue, setEstIssue] = useState('lcd');
 
     const getEstimationResult = () => {
         const prices: Record<string, Record<string, { price: string; time: string }>> = {
-            laptop: {
-                lcd: { price: 'Rp 650.000 - Rp 1.400.000', time: '1 - 3 Jam' },
-                baterai: { price: 'Rp 450.000 - Rp 850.000', time: '45 Menit' },
-                ic: { price: 'Rp 750.000 - Rp 1.800.000', time: '2 - 4 Hari' },
-                clean: { price: 'Rp 150.000 - Rp 250.000', time: '1 Jam' },
+            GADGET_COMPUTER: {
+                lcd: { price: 'Rp 450.000 - Rp 1.400.000', time: '1 - 3 Jam' },
+                baterai: { price: 'Rp 250.000 - Rp 850.000', time: '45 Menit' },
+                ic: { price: 'Rp 500.000 - Rp 1.800.000', time: '2 - 4 Hari' },
+                clean: { price: 'Rp 100.000 - Rp 250.000', time: '1 Jam' },
             },
-            phone: {
-                lcd: { price: 'Rp 350.000 - Rp 1.200.000', time: '1 Jam' },
-                baterai: { price: 'Rp 250.000 - Rp 600.000', time: '30 Menit' },
-                ic: { price: 'Rp 500.000 - Rp 1.100.000', time: '1 - 3 Hari' },
-                clean: { price: 'Rp 100.000', time: '30 Menit' },
-            },
-            tv: {
+            AUDIO_VIDEO: {
                 lcd: { price: 'Rp 800.000 - Rp 2.500.000', time: '1 - 2 Hari' },
                 baterai: { price: 'Rp 350.000 (Power Supply)', time: '1 Hari' },
                 ic: { price: 'Rp 600.000 - Rp 1.500.000', time: '2 Hari' },
                 clean: { price: 'Rp 150.000', time: '1 Jam' },
+            },
+            HOME_APPLIANCES: {
+                lcd: { price: 'Rp 500.000 - Rp 1.500.000', time: '1 - 3 Hari' },
+                baterai: { price: 'Rp 300.000 - Rp 700.000 (Kelestrikan)', time: '1 Hari' },
+                ic: { price: 'Rp 400.000 - Rp 1.200.000', time: '2 Hari' },
+                clean: { price: 'Rp 200.000 - Rp 400.000', time: '2 Jam' },
+            },
+            OTHER: {
+                lcd: { price: 'Hubungi CS', time: '-' },
+                baterai: { price: 'Hubungi CS', time: '-' },
+                ic: { price: 'Hubungi CS', time: '-' },
+                clean: { price: 'Hubungi CS', time: '-' },
             }
         };
         return prices[estDevice]?.[estIssue] || { price: 'Hubungi CS', time: '-' };
@@ -54,9 +60,10 @@ export default function EstimationCalculator({ onOpenOrderModal }: EstimationCal
                             onChange={(e) => setEstDevice(e.target.value)}
                             className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-3.5 py-3 text-xs outline-none focus:border-blue-500 font-medium cursor-pointer"
                         >
-                            <option value="laptop">Laptop / MacBook</option>
-                            <option value="phone">Smartphone / iPhone</option>
-                            <option value="tv">TV / Smart Display</option>
+                            <option value="GADGET_COMPUTER">Gadget &amp; Komputer (Laptop, HP, Tablet)</option>
+                            <option value="AUDIO_VIDEO">Audio &amp; Video (TV, Speaker, Display)</option>
+                            <option value="HOME_APPLIANCES">Peralatan Rumah Tangga (Kulkas, Mesin Cuci)</option>
+                            <option value="OTHER">Lainnya</option>
                         </select>
                     </div>
 
@@ -68,9 +75,9 @@ export default function EstimationCalculator({ onOpenOrderModal }: EstimationCal
                             className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-3.5 py-3 text-xs outline-none focus:border-blue-500 font-medium cursor-pointer"
                         >
                             <option value="lcd">Layar / LCD Pecah / Blank</option>
-                            <option value="baterai">Baterai Drop / Not Charging</option>
+                            <option value="baterai">Baterai Drop / Power Supply</option>
                             <option value="ic">Mati Total / IC Power / Short</option>
-                            <option value="clean">Overheat / Cleaning &amp; Pasta</option>
+                            <option value="clean">Overheat / Cleaning &amp; Maintenance</option>
                         </select>
                     </div>
                 </div>

@@ -11,7 +11,7 @@ interface CreateOrderModalProps {
 
 export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ isOpen, onClose }) => {
     const [formData, setFormData] = useState({
-        category: 'LAPTOP',
+        category: 'GADGET_COMPUTER',
         brand: '',
         modelName: '',
         serialNumber: '',
@@ -29,7 +29,7 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ isOpen, onCl
         setIsSubmitting(true);
 
         try {
-            // Mengirim POST request ke backend tanpa Authorization Header
+            // Mengirim POST request ke backend
             const response = await fetch('http://localhost:8080/api/v1/service-orders', {
                 method: 'POST',
                 headers: {
@@ -38,16 +38,25 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ isOpen, onCl
                 body: JSON.stringify(formData),
             });
 
-            const result = await response.json();
+            if (response.ok) {
+                const result = await response.json().catch(() => ({}));
+                // Fleksibel membaca orderNumber baik dari result.data maupun langsung dari result
+                const orderNo = result.data?.orderNumber || result.orderNumber || result.data?.id || result.id;
 
-            if (response.ok && result.data) {
-                setCreatedOrderNumber(result.data.orderNumber);
+                if (orderNo) {
+                    setCreatedOrderNumber(orderNo);
+                } else {
+                    alert('Pesanan berhasil dibuat!');
+                    handleResetAndClose();
+                }
             } else {
-                alert(result.message || 'Gagal membuat pesanan servis.');
+                // Tangani respons error (seperti 403 Forbidden / 400 Bad Request) secara aman
+                const errData = await response.json().catch(() => ({}));
+                alert(`Gagal membuat pesanan (${response.status}): ${errData.message || 'Akses ditolak atau data tidak valid.'}`);
             }
         } catch (error) {
-            console.error(error);
-            alert('Terjadi kesalahan koneksi ke server.');
+            console.error('Error submitting order:', error);
+            alert('Terjadi kesalahan koneksi ke server. Pastikan backend Spring Boot aktif.');
         } finally {
             setIsSubmitting(false);
         }
@@ -56,7 +65,7 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ isOpen, onCl
     const handleResetAndClose = () => {
         setCreatedOrderNumber(null);
         setFormData({
-            category: 'LAPTOP',
+            category: 'GADGET_COMPUTER',
             brand: '',
             modelName: '',
             serialNumber: '',
@@ -184,10 +193,10 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({ isOpen, onCl
                                                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                                                 className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all"
                                             >
-                                                <option value="LAPTOP">LAPTOP</option>
-                                                <option value="SMARTPHONE">SMARTPHONE</option>
-                                                <option value="TELEVISION">TV / MONITOR</option>
-                                                <option value="OTHER">LAIN-LAIN</option>
+                                                <option value="GADGET_COMPUTER">Gadget & Komputer (HP, Laptop, PC)</option>
+                                                <option value="AUDIO_VIDEO">Audio & Video (TV, Speaker, Monitor)</option>
+                                                <option value="HOME_APPLIANCES">Peralatan Rumah (Kulkas, AC, Kipas)</option>
+                                                <option value="OTHER">Lain-lain / Perangkat Lainnya</option>
                                             </select>
                                         </div>
                                         <div>

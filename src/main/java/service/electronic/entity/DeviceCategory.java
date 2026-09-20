@@ -1,10 +1,8 @@
 package service.electronic.entity;
 
 public enum DeviceCategory {
-    LAPTOP,
-    SMARTPHONE,
-    TELEVISION,
-    REFRIGERATOR,
-    WASHING_MACHINE,
+    GADGET_COMPUTER,
+    AUDIO_VIDEO,
+    HOME_APPLIANCES,
     OTHER
 }

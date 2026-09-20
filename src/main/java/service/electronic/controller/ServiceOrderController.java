@@ -16,6 +16,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/service-orders")
+@CrossOrigin(origins = "http://localhost:3000", allowedHeaders = "*")
 @RequiredArgsConstructor
 public class ServiceOrderController {
 
@@ -26,7 +27,6 @@ public class ServiceOrderController {
             @Valid @RequestBody CreateServiceOrderRequest request,
             Authentication authentication
     ) {
-        // Jika user login, ambil emailnya. Jika tidak login (publik), atur sebagai null
         String authenticatedEmail = (authentication != null && authentication.isAuthenticated())
                 ? authentication.getName()
                 : null;
@@ -64,7 +64,8 @@ public class ServiceOrderController {
         );
     }
 
-    @PatchMapping("/{orderId}/status")
+    // MENGGUNAKAN @PutMapping Sesuai Request Frontend
+    @PutMapping("/{orderId}/status")
     public ResponseEntity<WebResponse<ServiceOrderResponse>> updateOrderStatus(
             @PathVariable String orderId,
             @Valid @RequestBody UpdateServiceStatusRequest request

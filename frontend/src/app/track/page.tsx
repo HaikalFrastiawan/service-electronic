@@ -38,13 +38,14 @@ function TrackContent() {
         setIsLoading(true);
 
         try {
-            // Memanggil API backend publik tanpa butuh token JWT
             const response = await fetch(`http://localhost:8080/api/v1/service-orders/track/${encodeURIComponent(resi.trim())}`);
-            const result = await response.json();
 
-            if (response.ok && result.data) {
-                setTicket(result.data);
+            // Cek dulu apakah response HTTP statusnya OK (200)
+            if (response.ok) {
+                const result = await response.json();
+                setTicket(result.data || null);
             } else {
+                // Jika status 404 / 403 / 500, set ticket ke null tanpa bikin aplikasi crash
                 setTicket(null);
             }
         } catch (error) {

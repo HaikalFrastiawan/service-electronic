@@ -24,6 +24,7 @@ export default function AdminDashboard() {
   const [adminUser, setAdminUser] = useState<any>(null);
   const [orders, setOrders] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // State Pencarian & Filter
   const [searchTerm, setSearchTerm] = useState('');
@@ -39,9 +40,10 @@ export default function AdminDashboard() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
 
-  // Fungsi Fetch Orders dari Backend API
+  // Fungsi Fetch Orders dari Backend API dengan Error Handling Aman
   const fetchOrders = async (token: string) => {
     setIsLoading(true);
+    setErrorMessage(null);
     try {
       const response = await fetch('http://localhost:8080/api/v1/service-orders', {
         headers: {
@@ -50,14 +52,27 @@ export default function AdminDashboard() {
         },
       });
 
-      const result = await response.json();
-      if (response.ok && result.data) {
-        setOrders(result.data);
-      } else {
-        console.error('Gagal mengambil data:', result.message);
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.message || `Gagal mengambil data (HTTP ${response.status})`);
       }
-    } catch (error) {
-      console.error('Network error saat fetch orders:', error);
+
+      const result = await response.json();
+      // Menangani fleksibilitas struktur response data dari backend
+      if (Array.isArray(result.data)) {
+        setOrders(result.data);
+      } else if (Array.isArray(result)) {
+        setOrders(result);
+      } else {
+        setOrders([]);
+      }
+    } catch (error: any) {
+      console.error('Network/Fetch error saat fetch orders:', error);
+      setErrorMessage(
+          error.name === 'TypeError'
+              ? 'Gagal terhubung ke server Spring Boot (port 8080). Pastikan backend sudah di-Run.'
+              : error.message
+      );
     } finally {
       setIsLoading(false);
     }
@@ -67,7 +82,7 @@ export default function AdminDashboard() {
     const user = getAuthUser();
     if (!user || !user.token) {
       router.replace('/login');
-    } else if (user.role !== 'ROLE_ADMIN') {
+    } else if (user.role !== 'ROLE_ADMIN' && user.role !== 'ADMIN') {
       router.replace('/dashboard');
     } else {
       setAdminUser(user);
@@ -79,8 +94,8 @@ export default function AdminDashboard() {
     setSelectedOrder(order);
     setEditStatus(order.status || 'PENDING');
     setEditEstCost(order.estimatedCost || 0);
-    setEditFinalCost(order.finalCost || order.totalCost || 0);
-    setEditNotes(order.technicianNotes || '');
+    setEditFinalCost(order.totalCost || order.finalCost || 0);
+    setEditNotes(order.completionNotes || order.technicianNotes || '');
     setSaveSuccess(null);
   };
 
@@ -89,14 +104,22 @@ export default function AdminDashboard() {
     setSaveSuccess(null);
   };
 
-  // Simpan Perubahan Status Ke API Backend
+  // Simpan Perubahan Status Ke API Backend dengan Validasi Error Jaringan
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!selectedOrder) return;
+
     setIsSaving(true);
     setSaveSuccess(null);
 
+    const orderId = selectedOrder.id || selectedOrder.orderNumber;
+    if (!orderId) {
+      alert('ID Order tidak valid.');
+      setIsSaving(false);
+      return;
+    }
+
     try {
-      const orderId = selectedOrder.id || selectedOrder.orderNumber;
       const response = await fetch(`http://localhost:8080/api/v1/service-orders/${orderId}/status`, {
         method: 'PUT',
         headers: {
@@ -105,23 +128,25 @@ export default function AdminDashboard() {
         },
         body: JSON.stringify({
           status: editStatus,
-          estimatedCost: Number(editEstCost),
-          finalCost: Number(editFinalCost),
-          technicianNotes: editNotes,
+          estimatedCost: Number(editEstCost) || 0,
+          totalCost: Number(editFinalCost) || 0,
+          completionNotes: editNotes,
         }),
       });
 
       if (response.ok) {
-        setSaveSuccess('Perubahan berhasil disimpan ke database!');
-        fetchOrders(adminUser.token); // Refresh data
+        setSaveSuccess('Perubahan berhasil disimpan!');
+        await fetchOrders(adminUser.token);
         setTimeout(() => {
           handleCloseDrawer();
-        }, 800);
+        }, 1000);
       } else {
-        alert('Gagal memperbarui status order.');
+        const errData = await response.json().catch(() => ({}));
+        alert(`Gagal menyimpan (${response.status}): ${errData.message || 'Akses ditolak atau parameter salah'}`);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Gagal menyimpan:', error);
+      alert('Gagal terhubung ke server backend! Pastikan Spring Boot aktif di http://localhost:8080');
     } finally {
       setIsSaving(false);
     }
@@ -137,7 +162,7 @@ export default function AdminDashboard() {
     const orderNo = (ord.orderNumber || ord.id || '').toLowerCase();
     const email = (ord.customerEmail || ord.userEmail || '').toLowerCase();
     const brand = (ord.brand || '').toLowerCase();
-    const model = (ord.model || ord.modelName || '').toLowerCase();
+    const model = (ord.modelName || ord.model || '').toLowerCase(); // <-- DIBETULKAN DI SINI (menggunakan const model)
 
     const matchSearch =
         orderNo.includes(searchTerm.toLowerCase()) ||
@@ -184,6 +209,22 @@ export default function AdminDashboard() {
 
         {/* Main Content Dashboard */}
         <main className="p-6 max-w-7xl mx-auto space-y-6">
+          {/* Banner Error jika Fetch Gagal */}
+          {errorMessage && (
+              <div className="p-4 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center justify-between gap-3 font-semibold">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
+                  <span>{errorMessage}</span>
+                </div>
+                <button
+                    onClick={() => fetchOrders(adminUser.token)}
+                    className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-all text-xs font-bold cursor-pointer"
+                >
+                  Coba Lagi
+                </button>
+              </div>
+          )}
+
           {/* Ringkasan Statistik */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
@@ -250,7 +291,7 @@ export default function AdminDashboard() {
               <div className="flex items-center gap-2 w-full sm:w-auto">
                 <button
                     onClick={() => fetchOrders(adminUser.token)}
-                    className="p-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-slate-600 transition-all flex items-center gap-1 text-xs font-semibold"
+                    className="p-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-slate-600 transition-all flex items-center gap-1 text-xs font-semibold cursor-pointer"
                     title="Muat Ulang Data"
                 >
                   <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
@@ -320,7 +361,7 @@ export default function AdminDashboard() {
                         </span>
                           </td>
                           <td className="p-4 font-mono font-bold text-slate-900">
-                            Rp {Number(ord.finalCost || ord.totalCost || 0).toLocaleString('id-ID')}
+                            Rp {Number(ord.totalCost || ord.finalCost || 0).toLocaleString('id-ID')}
                           </td>
                           <td className="p-4 text-slate-500">
                             {ord.createdAt ? new Date(ord.createdAt).toLocaleString('id-ID') : ord.dateIn || '-'}

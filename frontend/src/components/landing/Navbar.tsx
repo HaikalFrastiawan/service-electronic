@@ -2,11 +2,11 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { Wrench, LayoutGrid, Layers, Calculator, HelpCircle, ChevronDown, Laptop, Smartphone, Tv } from 'lucide-react';
+import { Wrench, LayoutGrid, Layers, Calculator, HelpCircle, ChevronDown, Laptop, Tv, Home, Package } from 'lucide-react';
 
 interface NavbarProps {
     onNavigate: (id: string) => void;
-    onOpenOrderModal?: () => void; // Tambahkan Prop Baru
+    onOpenOrderModal?: () => void;
 }
 
 export default function Navbar({ onNavigate, onOpenOrderModal }: NavbarProps) {
@@ -55,22 +55,29 @@ export default function Navbar({ onNavigate, onOpenOrderModal }: NavbarProps) {
                                 <button onClick={() => handleNavClick('layanan')} className="w-full text-left p-2.5 rounded-xl hover:bg-slate-50 flex items-center gap-3 transition-colors">
                                     <Laptop className="w-4 h-4 text-blue-600" />
                                     <div>
-                                        <p className="font-bold text-slate-800 text-xs">Laptop &amp; MacBook</p>
-                                        <p className="text-[10px] text-slate-400">Ganti Screen, Keyboard, Chipset</p>
-                                    </div>
-                                </button>
-                                <button onClick={() => handleNavClick('layanan')} className="w-full text-left p-2.5 rounded-xl hover:bg-slate-50 flex items-center gap-3 transition-colors">
-                                    <Smartphone className="w-4 h-4 text-blue-600" />
-                                    <div>
-                                        <p className="font-bold text-slate-800 text-xs">Smartphone &amp; Tablet</p>
-                                        <p className="text-[10px] text-slate-400">LCD, Baterai, Face ID, Bypass</p>
+                                        <p className="font-bold text-slate-800 text-xs">Gadget &amp; Komputer</p>
+                                        <p className="text-[10px] text-slate-400">Laptop, Smartphone, Tablet</p>
                                     </div>
                                 </button>
                                 <button onClick={() => handleNavClick('layanan')} className="w-full text-left p-2.5 rounded-xl hover:bg-slate-50 flex items-center gap-3 transition-colors">
                                     <Tv className="w-4 h-4 text-blue-600" />
                                     <div>
-                                        <p className="font-bold text-slate-800 text-xs">TV &amp; Smart Devices</p>
-                                        <p className="text-[10px] text-slate-400">Power Supply, Mainboard</p>
+                                        <p className="font-bold text-slate-800 text-xs">Audio &amp; Video</p>
+                                        <p className="text-[10px] text-slate-400">TV, Smart Display, Speaker</p>
+                                    </div>
+                                </button>
+                                <button onClick={() => handleNavClick('layanan')} className="w-full text-left p-2.5 rounded-xl hover:bg-slate-50 flex items-center gap-3 transition-colors">
+                                    <Home className="w-4 h-4 text-blue-600" />
+                                    <div>
+                                        <p className="font-bold text-slate-800 text-xs">Peralatan Rumah Tangga</p>
+                                        <p className="text-[10px] text-slate-400">Kulkas, Mesin Cuci, dll.</p>
+                                    </div>
+                                </button>
+                                <button onClick={() => handleNavClick('layanan')} className="w-full text-left p-2.5 rounded-xl hover:bg-slate-50 flex items-center gap-3 transition-colors">
+                                    <Package className="w-4 h-4 text-blue-600" />
+                                    <div>
+                                        <p className="font-bold text-slate-800 text-xs">Perangkat Lainnya</p>
+                                        <p className="text-[10px] text-slate-400">Elektronik Custom / Modul</p>
                                     </div>
                                 </button>
                             </div>
@@ -114,7 +121,6 @@ export default function Navbar({ onNavigate, onOpenOrderModal }: NavbarProps) {
                         Masuk
                     </Link>
 
-                    {/* Ubah onClick di sini agar memicu Modal Order */}
                     <button
                         onClick={onOpenOrderModal}
                         className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-[11px] tracking-wider uppercase shadow-md shadow-blue-600/30 active:scale-95 transition-all cursor-pointer"
