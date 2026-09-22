@@ -41,6 +41,24 @@ function parseErrorMessage(json: any, fallbackMessage: string): string {
   return fallbackMessage;
 }
 
+// ─── Centralized Fetch Wrapper (Rate Limit & Auth Aware) ─────────────────────
+
+async function customFetch(url: string, options: RequestInit = {}): Promise<Response> {
+  const res = await fetch(url, options);
+
+  // Jika terkena Rate Limiter (HTTP 429)
+  if (res.status === 429) {
+    const json = await res.json().catch(() => ({}));
+    const message = parseErrorMessage(
+        json,
+        'Terlalu banyak permintaan! Silakan tunggu 1 menit sebelum mencoba kembali.'
+    );
+    throw new Error(`[RATE_LIMIT] ${message}`);
+  }
+
+  return res;
+}
+
 // ─── Auth Storage Helpers ─────────────────────────────────────────────────────
 
 export function getAuthToken(): string | null {
@@ -90,12 +108,15 @@ export async function loginUser(data: LoginRequest): Promise<AuthResponse> {
   let res: Response;
 
   try {
-    res = await fetch(`${API_BASE_URL}/auth/login`, {
+    res = await customFetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
-  } catch (err) {
+  } catch (err: any) {
+    if (err.message?.includes('[RATE_LIMIT]')) {
+      throw new Error(err.message.replace('[RATE_LIMIT] ', ''));
+    }
     console.warn('Backend offline, menggunakan fallback auth:', err);
     let role: UserRole = 'ROLE_CUSTOMER';
     if (data.email.toLowerCase().includes('admin')) role = 'ROLE_ADMIN';
@@ -125,12 +146,15 @@ export async function registerUser(data: RegisterRequest): Promise<AuthResponse>
   let res: Response;
 
   try {
-    res = await fetch(`${API_BASE_URL}/auth/register`, {
+    res = await customFetch(`${API_BASE_URL}/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
-  } catch (err) {
+  } catch (err: any) {
+    if (err.message?.includes('[RATE_LIMIT]')) {
+      throw new Error(err.message.replace('[RATE_LIMIT] ', ''));
+    }
     console.warn('Backend offline, menggunakan fallback register:', err);
     let role: UserRole = 'ROLE_CUSTOMER';
     if (data.email.toLowerCase().includes('admin')) role = 'ROLE_ADMIN';
@@ -207,7 +231,7 @@ let localSparePartsStore: SparePart[] = [...MOCK_SPARE_PARTS];
 
 export async function trackOrder(orderNumber: string): Promise<ServiceOrderResponse> {
   try {
-    const res = await fetch(`${API_BASE_URL}/service-orders/track/${encodeURIComponent(orderNumber)}`, {
+    const res = await customFetch(`${API_BASE_URL}/service-orders/track/${encodeURIComponent(orderNumber)}`, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
       cache: 'no-store',
@@ -217,7 +241,8 @@ export async function trackOrder(orderNumber: string): Promise<ServiceOrderRespo
       const json = await res.json();
       return json.data || json;
     }
-  } catch (err) {
+  } catch (err: any) {
+    if (err.message?.includes('[RATE_LIMIT]')) throw new Error(err.message.replace('[RATE_LIMIT] ', ''));
     console.warn('Backend API unreachable, using local store for order track:', err);
   }
 
@@ -229,7 +254,7 @@ export async function trackOrder(orderNumber: string): Promise<ServiceOrderRespo
 
 export async function fetchAllOrders(): Promise<ServiceOrderResponse[]> {
   try {
-    const res = await fetch(`${API_BASE_URL}/service-orders`, {
+    const res = await customFetch(`${API_BASE_URL}/service-orders`, {
       method: 'GET',
       headers: getAuthHeaders(),
       cache: 'no-store',
@@ -244,7 +269,8 @@ export async function fetchAllOrders(): Promise<ServiceOrderResponse[]> {
       clearAuthData();
       throw new Error('Sesi telah berakhir, silakan login kembali.');
     }
-  } catch (err) {
+  } catch (err: any) {
+    if (err.message?.includes('[RATE_LIMIT]')) throw new Error(err.message.replace('[RATE_LIMIT] ', ''));
     if (err instanceof Error && err.message.includes('Sesi telah berakhir')) {
       throw err;
     }
@@ -256,7 +282,7 @@ export async function fetchAllOrders(): Promise<ServiceOrderResponse[]> {
 
 export async function createServiceOrder(data: CreateServiceOrderRequest): Promise<ServiceOrderResponse> {
   try {
-    const res = await fetch(`${API_BASE_URL}/service-orders`, {
+    const res = await customFetch(`${API_BASE_URL}/service-orders`, {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify(data),
@@ -266,7 +292,8 @@ export async function createServiceOrder(data: CreateServiceOrderRequest): Promi
       const json = await res.json();
       return json.data || json;
     }
-  } catch (err) {
+  } catch (err: any) {
+    if (err.message?.includes('[RATE_LIMIT]')) throw new Error(err.message.replace('[RATE_LIMIT] ', ''));
     console.warn('Backend API unreachable, creating order in local store:', err);
   }
 
@@ -294,8 +321,8 @@ export async function createServiceOrder(data: CreateServiceOrderRequest): Promi
 
 export async function updateOrderStatusApi(orderId: string, data: UpdateServiceStatusRequest): Promise<ServiceOrderResponse> {
   try {
-    const res = await fetch(`${API_BASE_URL}/service-orders/${orderId}/status`, {
-      method: 'PATCH',
+    const res = await customFetch(`${API_BASE_URL}/service-orders/${orderId}/status`, {
+      method: 'PUT',
       headers: getAuthHeaders(),
       body: JSON.stringify(data),
     });
@@ -304,7 +331,8 @@ export async function updateOrderStatusApi(orderId: string, data: UpdateServiceS
       const json = await res.json();
       return json.data || json;
     }
-  } catch (err) {
+  } catch (err: any) {
+    if (err.message?.includes('[RATE_LIMIT]')) throw new Error(err.message.replace('[RATE_LIMIT] ', ''));
     console.warn('Backend API unreachable, updating local store:', err);
   }
 
@@ -328,7 +356,7 @@ export async function updateOrderStatusApi(orderId: string, data: UpdateServiceS
 
 export async function fetchDashboardSummary(): Promise<DashboardSummary> {
   try {
-    const res = await fetch(`${API_BASE_URL}/dashboard/summary`, {
+    const res = await customFetch(`${API_BASE_URL}/dashboard/summary`, {
       method: 'GET',
       headers: getAuthHeaders(),
       cache: 'no-store',
@@ -338,7 +366,8 @@ export async function fetchDashboardSummary(): Promise<DashboardSummary> {
       const json = await res.json();
       return json.data || json;
     }
-  } catch (err) {
+  } catch (err: any) {
+    if (err.message?.includes('[RATE_LIMIT]')) throw new Error(err.message.replace('[RATE_LIMIT] ', ''));
     console.warn('Backend API unreachable, calculating mock summary:', err);
   }
 
@@ -360,7 +389,7 @@ export async function fetchDashboardSummary(): Promise<DashboardSummary> {
 
 export async function fetchSpareParts(): Promise<SparePart[]> {
   try {
-    const res = await fetch(`${API_BASE_URL}/spare-parts`, {
+    const res = await customFetch(`${API_BASE_URL}/spare-parts`, {
       method: 'GET',
       headers: getAuthHeaders(),
       cache: 'no-store',
@@ -370,15 +399,17 @@ export async function fetchSpareParts(): Promise<SparePart[]> {
       const json = await res.json();
       return Array.isArray(json) ? json : (json.data || []);
     }
-  } catch (err) {
+  } catch (err: any) {
+    if (err.message?.includes('[RATE_LIMIT]')) throw new Error(err.message.replace('[RATE_LIMIT] ', ''));
     console.warn('Backend API unreachable, using local store for spare parts:', err);
   }
 
   return localSparePartsStore;
 }
+
 export async function createSparePart(data: SparePartRequest): Promise<SparePart> {
   try {
-    const res = await fetch(`${API_BASE_URL}/spare-parts`, {
+    const res = await customFetch(`${API_BASE_URL}/spare-parts`, {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify(data),
@@ -388,7 +419,8 @@ export async function createSparePart(data: SparePartRequest): Promise<SparePart
       const json = await res.json();
       return json.data || json;
     }
-  } catch (err) {
+  } catch (err: any) {
+    if (err.message?.includes('[RATE_LIMIT]')) throw new Error(err.message.replace('[RATE_LIMIT] ', ''));
     console.warn('Backend API unreachable, creating spare part in local store:', err);
   }
 
@@ -406,7 +438,7 @@ export async function createSparePart(data: SparePartRequest): Promise<SparePart
 
 export async function updateSparePart(id: string, data: SparePartRequest): Promise<SparePart> {
   try {
-    const res = await fetch(`${API_BASE_URL}/spare-parts/${id}`, {
+    const res = await customFetch(`${API_BASE_URL}/spare-parts/${id}`, {
       method: 'PUT',
       headers: getAuthHeaders(),
       body: JSON.stringify(data),
@@ -416,7 +448,8 @@ export async function updateSparePart(id: string, data: SparePartRequest): Promi
       const json = await res.json();
       return json.data || json;
     }
-  } catch (err) {
+  } catch (err: any) {
+    if (err.message?.includes('[RATE_LIMIT]')) throw new Error(err.message.replace('[RATE_LIMIT] ', ''));
     console.warn('Backend API unreachable, updating spare part in local store:', err);
   }
 
@@ -434,15 +467,17 @@ export async function updateSparePart(id: string, data: SparePartRequest): Promi
 
   throw new Error('Spare part tidak ditemukan');
 }
+
 export async function deleteSparePart(id: string): Promise<void> {
   try {
-    const res = await fetch(`${API_BASE_URL}/spare-parts/${id}`, {
+    const res = await customFetch(`${API_BASE_URL}/spare-parts/${id}`, {
       method: 'DELETE',
       headers: getAuthHeaders(),
     });
 
     if (res.ok) return;
-  } catch (err) {
+  } catch (err: any) {
+    if (err.message?.includes('[RATE_LIMIT]')) throw new Error(err.message.replace('[RATE_LIMIT] ', ''));
     console.warn('Backend API unreachable, deleting spare part from local store:', err);
   }
 
@@ -451,7 +486,7 @@ export async function deleteSparePart(id: string): Promise<void> {
 
 export async function addSparePartToOrder(orderId: string, sparePartId: string, quantity: number): Promise<ServiceOrderResponse> {
   try {
-    const res = await fetch(`${API_BASE_URL}/service-orders/${orderId}/parts`, {
+    const res = await customFetch(`${API_BASE_URL}/service-orders/${orderId}/parts`, {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify({ sparePartId, quantity }),
@@ -461,7 +496,8 @@ export async function addSparePartToOrder(orderId: string, sparePartId: string, 
       const json = await res.json();
       return json.data || json;
     }
-  } catch (err) {
+  } catch (err: any) {
+    if (err.message?.includes('[RATE_LIMIT]')) throw new Error(err.message.replace('[RATE_LIMIT] ', ''));
     console.warn('Backend API unreachable, adding spare part to order in local store:', err);
   }
 
@@ -485,27 +521,7 @@ export async function addSparePartToOrder(orderId: string, sparePartId: string, 
   }
 
   throw new Error('Order atau Sparepart tidak ditemukan');
-
 }
-export async function fetchSpareparts() {
-  try {
-    // Sesuaikan URL ini dengan controller Spring Boot kamu
-    const response = await fetch("http://localhost:8080/api/spareparts", {
-      headers: {
-        "Content-Type": "application/json",
-      },
-      cache: "no-store",
-    });
 
-    // Jika response HTTP tidak OK (cth: 404 / 500), kembalikan array kosong agar frontend tidak crash
-    if (!response.ok) {
-      console.warn("API Sparepart mengembalikan status:", response.status);
-      return [];
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error("Gagal terhubung ke server sparepart:", error);
-    return []; // Return array kosong sebagai aman
-  }
-}
+// Alias untuk menjaga backward compatibility dengan panggillan komponen lama
+export const fetchSpareparts = fetchSpareParts;
