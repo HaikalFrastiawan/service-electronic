@@ -30,6 +30,7 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final UserDetailsService userDetailsService;
+    private final RateLimiterFilter rateLimiterFilter;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -48,16 +49,20 @@ public class SecurityConfig {
                                 "/api/spareparts/**",
                                 "/api/v1/spare-parts/**",
                                 "/api/service-orders/**",
-                                "/api/v1/service-orders/**" // <--- Pastikan baris ini ada di sini (sebelum .anyRequest)
+                                "/api/v1/service-orders/**"
                         ).permitAll()
 
-                        // 3. ADMIN ONLY: Khusus Dashboard jika ada
+                        // 3. ADMIN ONLY: Khusus Dashboard
                         .requestMatchers("/api/v1/dashboard/**").hasAnyAuthority("ROLE_ADMIN", "ADMIN")
 
-                        // 4. Sisa request lainnya
+                        // 4. Sisa request lainnya wajib login
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())
+
+                // 2. RATE LIMITER DIJALANKAN PALING AWAL
+                .addFilterBefore(rateLimiterFilter, UsernamePasswordAuthenticationFilter.class)
+                // 3. JWT FILTER DIJALANKAN SETELAH RATE LIMITER
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
