@@ -49,15 +49,8 @@ public class AuthController {
     @PostMapping("/forgot-password")
     public ResponseEntity<?> forgotPassword(@RequestBody Map<String, String> request) {
         String email = request.get("email");
-
-        // 1. (Opsional tapi wajib nantinya) Cek apakah email terdaftar di database
-        // User user = userRepository.findByEmail(email);
-        // if (user == null) { return ResponseEntity.badRequest().body("Email tidak ditemukan"); }
-
-        // 2. Generate token unik acak (Anda idealnya menyimpan token ini ke database beserta waktu kadaluarsanya)
         String resetToken = UUID.randomUUID().toString();
 
-        // 3. Kirim Email
         try {
             emailService.sendResetPasswordEmail(email, resetToken);
 

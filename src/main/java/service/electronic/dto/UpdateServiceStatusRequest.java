@@ -18,8 +18,6 @@ public class UpdateServiceStatusRequest {
     private BigDecimal totalCost;
     private String completionNotes;
     private Long technicianId;
-
-    // Tambahkan field ini agar input sparepart dari modal tidak ditolak Spring Boot
     private Long sparePartId;
     private Integer quantity;
 }

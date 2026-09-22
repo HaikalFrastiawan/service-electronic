@@ -60,9 +60,7 @@ public class SecurityConfig {
                 )
                 .authenticationProvider(authenticationProvider())
 
-                // 2. RATE LIMITER DIJALANKAN PALING AWAL
                 .addFilterBefore(rateLimiterFilter, UsernamePasswordAuthenticationFilter.class)
-                // 3. JWT FILTER DIJALANKAN SETELAH RATE LIMITER
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

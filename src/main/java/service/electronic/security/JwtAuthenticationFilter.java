@@ -30,15 +30,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         final String authHeader = request.getHeader("Authorization");
 
-        // 1. Jika header Authorization tidak ada atau tidak diawali "Bearer ", teruskan request
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
         }
-
         final String jwt = authHeader.substring(7).trim();
 
-        // 2. Abaikan jika token bernilai "null", "undefined", atau string kosong dari frontend
         if (jwt.isEmpty() || "null".equalsIgnoreCase(jwt) || "undefined".equalsIgnoreCase(jwt)) {
             filterChain.doFilter(request, response);
             return;
@@ -56,12 +53,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                             userDetails.getAuthorities()
                     );
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                 }
             }
         } catch (Exception e) {
-            // Log error jika token kedaluwarsa/invalid, lalu bersihkan context agar dianggap anonim
             logger.error("Gagal memvalidasi token JWT: " + e.getMessage());
             SecurityContextHolder.clearContext();
         }

@@ -12,7 +12,6 @@ public class EmailService {
     private JavaMailSender mailSender;
 
     public void sendResetPasswordEmail(String toEmail, String resetToken) {
-        // Link yang akan mengarahkan user kembali ke Next.js frontend
         String resetLink = "http://localhost:3000/reset-password?token=" + resetToken;
 
         SimpleMailMessage message = new SimpleMailMessage();

@@ -60,10 +60,8 @@ public class ServiceOrderController {
             @PathVariable String orderId,
             @Valid @RequestBody UpdateServiceStatusRequest request
     ) {
-        // 1. Update Status & Biaya Pengerjaan
         ServiceOrderResponse response = serviceOrderService.updateOrderStatus(orderId, request);
 
-        // 2. Jika ada sparepart yang dipilih dari modal, langsung potong stok & tambahkan ke order
         if (request.getSparePartId() != null && request.getQuantity() != null && request.getQuantity() > 0) {
             response = serviceOrderService.addSparePartToOrder(orderId, request.getSparePartId(), request.getQuantity());
         }
