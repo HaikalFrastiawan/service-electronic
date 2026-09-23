@@ -19,21 +19,25 @@ const TOKEN_KEY = 'electrofix_jwt';
 const USER_KEY = 'electrofix_user';
 
 // Helper untuk mengekstrak pesan error dari response backend
-function parseErrorMessage(json: any, fallbackMessage: string): string {
-  if (json?.message && typeof json.message === 'string') {
-    return json.message;
-  }
+function parseErrorMessage(json: unknown, fallbackMessage: string): string {
+  if (json && typeof json === 'object') {
+    const errObj = json as Record<string, unknown>;
 
-  if (json?.errors) {
-    if (typeof json.errors === 'string') {
-      return json.errors;
+    if (typeof errObj.message === 'string') {
+      return errObj.message;
     }
-    if (typeof json.errors === 'object') {
-      const values = Object.values(json.errors);
-      if (values.length > 0) {
-        const firstVal = values[0];
-        if (typeof firstVal === 'string') return firstVal;
-        if (Array.isArray(firstVal) && firstVal.length > 0) return String(firstVal[0]);
+
+    if (errObj.errors) {
+      if (typeof errObj.errors === 'string') {
+        return errObj.errors;
+      }
+      if (typeof errObj.errors === 'object' && errObj.errors !== null) {
+        const values = Object.values(errObj.errors);
+        if (values.length > 0) {
+          const firstVal = values[0];
+          if (typeof firstVal === 'string') return firstVal;
+          if (Array.isArray(firstVal) && firstVal.length > 0) return String(firstVal[0]);
+        }
       }
     }
   }
@@ -66,7 +70,7 @@ export function getAuthToken(): string | null {
   return localStorage.getItem(TOKEN_KEY);
 }
 
-export function getAuthUser(): any | null {
+export function getAuthUser(): AuthResponse | null {
   if (typeof window === 'undefined') return null;
   const user = localStorage.getItem(USER_KEY);
   return user ? JSON.parse(user) : null;
@@ -80,7 +84,7 @@ export function saveAuthData(data: AuthResponse): void {
   localStorage.setItem(USER_KEY, JSON.stringify(data));
 }
 
-export function setAuthUser(userData: any): void {
+export function setAuthUser(userData: AuthResponse): void {
   if (typeof window === 'undefined') return;
   if (userData.token) {
     localStorage.setItem(TOKEN_KEY, userData.token);
@@ -113,9 +117,10 @@ export async function loginUser(data: LoginRequest): Promise<AuthResponse> {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
-  } catch (err: any) {
-    if (err.message?.includes('[RATE_LIMIT]')) {
-      throw new Error(err.message.replace('[RATE_LIMIT] ', ''));
+  } catch (err: unknown) {
+    const errMessage = err instanceof Error ? err.message : '';
+    if (errMessage.includes('[RATE_LIMIT]')) {
+      throw new Error(errMessage.replace('[RATE_LIMIT] ', ''));
     }
     console.warn('Backend offline, menggunakan fallback auth:', err);
     let role: UserRole = 'ROLE_CUSTOMER';
@@ -151,9 +156,10 @@ export async function registerUser(data: RegisterRequest): Promise<AuthResponse>
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
-  } catch (err: any) {
-    if (err.message?.includes('[RATE_LIMIT]')) {
-      throw new Error(err.message.replace('[RATE_LIMIT] ', ''));
+  } catch (err: unknown) {
+    const errMessage = err instanceof Error ? err.message : '';
+    if (errMessage.includes('[RATE_LIMIT]')) {
+      throw new Error(errMessage.replace('[RATE_LIMIT] ', ''));
     }
     console.warn('Backend offline, menggunakan fallback register:', err);
     let role: UserRole = 'ROLE_CUSTOMER';
@@ -241,8 +247,9 @@ export async function trackOrder(orderNumber: string): Promise<ServiceOrderRespo
       const json = await res.json();
       return json.data || json;
     }
-  } catch (err: any) {
-    if (err.message?.includes('[RATE_LIMIT]')) throw new Error(err.message.replace('[RATE_LIMIT] ', ''));
+  } catch (err: unknown) {
+    const errMessage = err instanceof Error ? err.message : '';
+    if (errMessage.includes('[RATE_LIMIT]')) throw new Error(errMessage.replace('[RATE_LIMIT] ', ''));
     console.warn('Backend API unreachable, using local store for order track:', err);
   }
 
@@ -269,8 +276,9 @@ export async function fetchAllOrders(): Promise<ServiceOrderResponse[]> {
       clearAuthData();
       throw new Error('Sesi telah berakhir, silakan login kembali.');
     }
-  } catch (err: any) {
-    if (err.message?.includes('[RATE_LIMIT]')) throw new Error(err.message.replace('[RATE_LIMIT] ', ''));
+  } catch (err: unknown) {
+    const errMessage = err instanceof Error ? err.message : '';
+    if (errMessage.includes('[RATE_LIMIT]')) throw new Error(errMessage.replace('[RATE_LIMIT] ', ''));
     if (err instanceof Error && err.message.includes('Sesi telah berakhir')) {
       throw err;
     }
@@ -292,8 +300,9 @@ export async function createServiceOrder(data: CreateServiceOrderRequest): Promi
       const json = await res.json();
       return json.data || json;
     }
-  } catch (err: any) {
-    if (err.message?.includes('[RATE_LIMIT]')) throw new Error(err.message.replace('[RATE_LIMIT] ', ''));
+  } catch (err: unknown) {
+    const errMessage = err instanceof Error ? err.message : '';
+    if (errMessage.includes('[RATE_LIMIT]')) throw new Error(errMessage.replace('[RATE_LIMIT] ', ''));
     console.warn('Backend API unreachable, creating order in local store:', err);
   }
 
@@ -331,8 +340,9 @@ export async function updateOrderStatusApi(orderId: string, data: UpdateServiceS
       const json = await res.json();
       return json.data || json;
     }
-  } catch (err: any) {
-    if (err.message?.includes('[RATE_LIMIT]')) throw new Error(err.message.replace('[RATE_LIMIT] ', ''));
+  } catch (err: unknown) {
+    const errMessage = err instanceof Error ? err.message : '';
+    if (errMessage.includes('[RATE_LIMIT]')) throw new Error(errMessage.replace('[RATE_LIMIT] ', ''));
     console.warn('Backend API unreachable, updating local store:', err);
   }
 
@@ -366,8 +376,9 @@ export async function fetchDashboardSummary(): Promise<DashboardSummary> {
       const json = await res.json();
       return json.data || json;
     }
-  } catch (err: any) {
-    if (err.message?.includes('[RATE_LIMIT]')) throw new Error(err.message.replace('[RATE_LIMIT] ', ''));
+  } catch (err: unknown) {
+    const errMessage = err instanceof Error ? err.message : '';
+    if (errMessage.includes('[RATE_LIMIT]')) throw new Error(errMessage.replace('[RATE_LIMIT] ', ''));
     console.warn('Backend API unreachable, calculating mock summary:', err);
   }
 
@@ -399,8 +410,9 @@ export async function fetchSpareParts(): Promise<SparePart[]> {
       const json = await res.json();
       return Array.isArray(json) ? json : (json.data || []);
     }
-  } catch (err: any) {
-    if (err.message?.includes('[RATE_LIMIT]')) throw new Error(err.message.replace('[RATE_LIMIT] ', ''));
+  } catch (err: unknown) {
+    const errMessage = err instanceof Error ? err.message : '';
+    if (errMessage.includes('[RATE_LIMIT]')) throw new Error(errMessage.replace('[RATE_LIMIT] ', ''));
     console.warn('Backend API unreachable, using local store for spare parts:', err);
   }
 
@@ -419,8 +431,9 @@ export async function createSparePart(data: SparePartRequest): Promise<SparePart
       const json = await res.json();
       return json.data || json;
     }
-  } catch (err: any) {
-    if (err.message?.includes('[RATE_LIMIT]')) throw new Error(err.message.replace('[RATE_LIMIT] ', ''));
+  } catch (err: unknown) {
+    const errMessage = err instanceof Error ? err.message : '';
+    if (errMessage.includes('[RATE_LIMIT]')) throw new Error(errMessage.replace('[RATE_LIMIT] ', ''));
     console.warn('Backend API unreachable, creating spare part in local store:', err);
   }
 
@@ -448,8 +461,9 @@ export async function updateSparePart(id: string, data: SparePartRequest): Promi
       const json = await res.json();
       return json.data || json;
     }
-  } catch (err: any) {
-    if (err.message?.includes('[RATE_LIMIT]')) throw new Error(err.message.replace('[RATE_LIMIT] ', ''));
+  } catch (err: unknown) {
+    const errMessage = err instanceof Error ? err.message : '';
+    if (errMessage.includes('[RATE_LIMIT]')) throw new Error(errMessage.replace('[RATE_LIMIT] ', ''));
     console.warn('Backend API unreachable, updating spare part in local store:', err);
   }
 
@@ -476,8 +490,9 @@ export async function deleteSparePart(id: string): Promise<void> {
     });
 
     if (res.ok) return;
-  } catch (err: any) {
-    if (err.message?.includes('[RATE_LIMIT]')) throw new Error(err.message.replace('[RATE_LIMIT] ', ''));
+  } catch (err: unknown) {
+    const errMessage = err instanceof Error ? err.message : '';
+    if (errMessage.includes('[RATE_LIMIT]')) throw new Error(errMessage.replace('[RATE_LIMIT] ', ''));
     console.warn('Backend API unreachable, deleting spare part from local store:', err);
   }
 
@@ -496,8 +511,9 @@ export async function addSparePartToOrder(orderId: string, sparePartId: string, 
       const json = await res.json();
       return json.data || json;
     }
-  } catch (err: any) {
-    if (err.message?.includes('[RATE_LIMIT]')) throw new Error(err.message.replace('[RATE_LIMIT] ', ''));
+  } catch (err: unknown) {
+    const errMessage = err instanceof Error ? err.message : '';
+    if (errMessage.includes('[RATE_LIMIT]')) throw new Error(errMessage.replace('[RATE_LIMIT] ', ''));
     console.warn('Backend API unreachable, adding spare part to order in local store:', err);
   }
 
@@ -523,5 +539,5 @@ export async function addSparePartToOrder(orderId: string, sparePartId: string, 
   throw new Error('Order atau Sparepart tidak ditemukan');
 }
 
-// Alias untuk menjaga backward compatibility dengan panggillan komponen lama
-export const fetchSpareparts = fetchSpareParts;
+// Alias untuk menjaga backward compatibility dengan panggilan komponen lama
+export const Spareparts = fetchSpareParts;
