@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { ShieldCheck, CheckCircle2 } from 'lucide-react';
+import Image from 'next/image';
 import { WORK_PHOTOS } from '@/data/landingData';
 
 export default function WorkshopSection() {
@@ -40,9 +41,11 @@ export default function WorkshopSection() {
                     {WORK_PHOTOS.map((item, idx) => (
                         <div key={idx} className="group bg-white rounded-3xl border border-slate-200/80 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300">
                             <div className="h-52 overflow-hidden relative">
-                                <img
+                                <Image
                                     src={item.url}
                                     alt={item.title}
+                                    width={400}
+                                    height={200}
                                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                                 />
                                 <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />

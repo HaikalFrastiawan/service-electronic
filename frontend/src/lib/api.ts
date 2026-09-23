@@ -541,3 +541,4 @@ export async function addSparePartToOrder(orderId: string, sparePartId: string, 
 
 // Alias untuk menjaga backward compatibility dengan panggilan komponen lama
 export const Spareparts = fetchSpareParts;
+export const fetchSpareparts = fetchSpareParts;
