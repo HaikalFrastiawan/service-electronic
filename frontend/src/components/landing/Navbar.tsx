@@ -35,7 +35,7 @@ export default function Navbar({ onNavigate, onOpenOrderModal }: NavbarProps) {
                     <div className="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-md shadow-blue-600/20">
                         <Wrench className="w-4 h-4" />
                     </div>
-                    <span className="font-black">ElectroFix <span className="text-blue-600 font-mono text-xs">PRO</span></span>
+                    <span className="font-black">Electronic <span className="text-blue-600 font-mono text-xs">SERV</span></span>
                 </Link>
 
                 <div className="hidden md:flex items-center gap-6 text-xs font-semibold text-slate-600 relative">
