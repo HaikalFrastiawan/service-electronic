@@ -2,16 +2,15 @@ package service.electronic.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
-@Data
-@AllArgsConstructor
+@Getter
+@Setter
 @NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class LoginUserRequest {
+
     @NotBlank(message = "Email wajib diisi")
     @Email(message = "Format email tidak valid")
     private String email;

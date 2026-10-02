@@ -1,15 +1,16 @@
 package service.electronic.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
-@Data
-@AllArgsConstructor
+@Getter
+@Setter
 @NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class TokenResponse {
 
     private String token;
+
+    @Builder.Default
+    private String tokenType = "Bearer";
 }
