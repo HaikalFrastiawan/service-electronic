@@ -7,7 +7,9 @@ import service.electronic.entity.User;
 import java.util.Optional;
 
 @Repository
-public interface UserRepository  extends JpaRepository<User, String>{
+public interface UserRepository extends JpaRepository<User, String> {
+
     boolean existsByEmail(String email);
+
     Optional<User> findByEmail(String email);
 }
