@@ -1,18 +1,18 @@
 package service.electronic.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import lombok.*;
 import service.electronic.entity.DeviceCategory;
 import service.electronic.entity.ServiceStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
-@Data
-@AllArgsConstructor
+@Getter
+@Setter
 @NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class ServiceOrderResponse {
 
@@ -22,7 +22,11 @@ public class ServiceOrderResponse {
     private BigDecimal estimatedCost;
     private BigDecimal totalCost;
     private String completionNotes;
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime updatedAt;
 
     // Detail Perangkat
@@ -33,7 +37,17 @@ public class ServiceOrderResponse {
     private String serialNumber;
     private String issueDescription;
 
-    // Detail Pelanggan & Teknisi (Hanya informasi non-sensitif)
+    // Detail Pelanggan
+    private String customerId;
+    private String customerName;
     private String customerEmail;
-    private String technicianEmail;
+    private String customerPhone;
+
+    // Detail Penanggung Jawab / Admin (Pengganti Technician)
+    private String handledById;
+    private String handledByName;
+    private String handledByEmail;
+
+    // Rincian Sparepart Terpasang
+    private List<ServiceOrderPartResponse> parts;
 }

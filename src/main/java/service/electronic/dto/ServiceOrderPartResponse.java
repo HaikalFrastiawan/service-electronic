@@ -9,15 +9,13 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class SparePartResponse {
+public class ServiceOrderPartResponse {
 
-    private Long id;
+    private String id;
+    private Long sparePartId;
     private String partCode;
     private String partName;
-    private String category;
-    private Integer stockQuantity;
-    private BigDecimal purchasePrice;
+    private Integer quantity;
     private BigDecimal sellingPrice;
-    private Integer minStockWarning;
-    private Boolean isLowStock;
+    private BigDecimal subtotal;
 }

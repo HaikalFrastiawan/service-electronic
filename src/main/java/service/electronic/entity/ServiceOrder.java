@@ -14,7 +14,7 @@ import java.util.List;
         indexes = {
                 @Index(name = "idx_order_number", columnList = "order_number"),
                 @Index(name = "idx_order_customer", columnList = "customer_id"),
-                @Index(name = "idx_order_technician", columnList = "technician_id"),
+                @Index(name = "idx_order_handled_by", columnList = "handled_by_id"),
                 @Index(name = "idx_order_status", columnList = "status")
         }
 )
@@ -39,8 +39,8 @@ public class ServiceOrder {
     private User customer;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "technician_id")
-    private User technician;
+    @JoinColumn(name = "handled_by_id")
+    private User handledBy;
 
     @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "device_id", nullable = false)

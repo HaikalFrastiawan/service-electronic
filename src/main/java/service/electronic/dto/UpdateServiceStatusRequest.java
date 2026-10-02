@@ -1,23 +1,30 @@
 package service.electronic.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotNull;
+import lombok.*;
 import service.electronic.entity.ServiceStatus;
 
 import java.math.BigDecimal;
 
-@Data
-@Builder
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class UpdateServiceStatusRequest {
+
+    @NotNull(message = "Status layanan wajib diisi")
     private ServiceStatus status;
+
+    @DecimalMin(value = "0.0", message = "Estimasi biaya tidak boleh negatif")
     private BigDecimal estimatedCost;
+
+    @DecimalMin(value = "0.0", message = "Total biaya tidak boleh negatif")
     private BigDecimal totalCost;
+
     private String completionNotes;
-    private Long technicianId;
-    private Long sparePartId;
-    private Integer quantity;
+
+    // Menyesuaikan tipe ID User yang berupa UUID (String)
+    private String handledById;
 }
